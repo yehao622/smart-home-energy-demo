@@ -15,6 +15,5 @@
     "NODE_ENV": "production",
     "VUE_APP_DEMO_MODE": "true"
   },
-  "functions": {},
   "regions": ["iad1"]
 }
