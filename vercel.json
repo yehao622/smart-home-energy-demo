@@ -1,9 +1,10 @@
 {
   "version": 2,
   "name": "smart-home-energy-simulator",
-  "framework": "vue",
+  "framework": null,
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "installCommand": "npm install",
   "routes": [
     {
       "src": "/(.*)",
@@ -13,5 +14,7 @@
   "env": {
     "NODE_ENV": "production",
     "VUE_APP_DEMO_MODE": "true"
-  }
+  },
+  "functions": {},
+  "regions": ["iad1"]
 }
