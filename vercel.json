@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "name": "smart-home-energy-simulator",
+  "framework": "vue",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "VUE_APP_DEMO_MODE": "true"
+  }
+}
