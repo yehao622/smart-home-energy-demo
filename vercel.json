@@ -2,9 +2,9 @@
   "version": 2,
   "name": "smart-home-energy-simulator",
   "framework": null,
-  "buildCommand": "npm run build",
+  "buildCommand": "npm ci && npm run build",
   "outputDirectory": "dist",
-  "installCommand": "npm install",
+  "installCommand": "npm ci",
   "routes": [
     {
       "src": "/(.*)",
@@ -13,7 +13,13 @@
   ],
   "env": {
     "NODE_ENV": "production",
-    "VUE_APP_DEMO_MODE": "true"
+    "VUE_APP_DEMO_MODE": "true",
+    "NPM_CONFIG_PRODUCTION": "false"
+  },
+  "build": {
+    "env": {
+      "NPM_CONFIG_PRODUCTION": "false"
+    }
   },
   "regions": ["iad1"]
 }
