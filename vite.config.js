@@ -4,7 +4,7 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [vue()],
-  base: '/',
+  base: './',
   root: './',
   build: {
     outDir: 'dist',
@@ -19,7 +19,11 @@ export default defineConfig({
         manualChunks: {
           vendor: ['vue'],
           charts: ['chart.js', 'vue-chartjs']
-        }
+        },
+        // Ensure proper file naming
+        entryFileNames: 'assets/[name].[hash].js',
+        chunkFileNames: 'assets/[name].[hash].js',
+        assetFileNames: 'assets/[name].[hash].[ext]'
       }
     }
   },
