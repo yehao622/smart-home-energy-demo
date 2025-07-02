@@ -870,7 +870,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 .container {
   max-width: 1200px;
   margin: 0 auto;
