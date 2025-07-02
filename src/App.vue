@@ -1,379 +1,668 @@
 <template>
-  <div class="app-container">
-    <header class="app-header">
+  <div class="container">
+    <header>
       <h1>Smart Home Energy Simulator</h1>
       <div class="demo-badge">
-        <span>Demo Mode</span>
+        <span>🚀 Demo Mode</span>
       </div>
     </header>
 
-    <div class="main-content">
-      <!-- Control Panel -->
-      <div class="control-panel">
-        <div class="simulation-controls">
-          <div class="control-group">
-            <label for="simulation-hours">Simulation hours:</label>
-            <input 
-              id="simulation-hours" 
-              type="number" 
-              v-model.number="simulationHours" 
-              min="0.1" 
-              max="24"
-              step="0.1"
-              placeholder="Hours"
-            />
-            <span>hours</span>
-          </div>
+    <div class="main-layout">
+      <!-- Energy Flow Diagram -->
+      <div class="diagram-section">
+        <energy-flow-diagram
+           :solar-output="solarOutput"
+           :battery-level="batteryLevel"
+           :battery-status="batteryStatus"
+           :battery-power="batteryPower"
+           :grid-power="gridPower"
+           :house-demand="houseDemand"
+           :appliances="appliances"
+           :is-running="simulationRunning"
+           :simulation-state="simulationState"
+           :rl-prediction="rlPrediction"
+           :simulation-elapsed-minutes="simulationElapsedMinutes"
+           :simulation-formatted-time="simulationFormattedTime"
+           :simulation-day="simulationDay"
+           :home-temperature-history="homeTemperatureHistory"
+           :water-temperature-history="waterTemperatureHistory"
+           :appliance-power-history="appliancePowerHistory"
+           :simulation-completed="simulationCompleted"
+           @start-simulation="startSimulation"
+           @pause-simulation="pauseSimulation"
+           @resume-simulation="resumeSimulation"
+           @reset-simulation="resetSimulation"
+           @toggle-appliance="toggleAppliance"
+           @demand-updated="updateHouseDemand"
+           @grid-power-updated="updateGridPower"
+           @config-updated="handleConfigUpdated"
+           @speed-changed="handleSpeedChange"
+           @battery-critical="handleBatteryCritical"
+           @history-updated="onHistoryUpdated"
+           @hourly-data-update="handleHourlyDataUpdate"
+           @simulation-complete="handleSimulationComplete"
+           @energy-models-updated="handleEnergyModelsUpdate"
+           @solar-output-updated="solarOutput = $event"
+           @battery-level-updated="batteryLevel = $event"
+           @battery-status-updated="batteryStatus = $event"
+           @update-appliance-power="handleAppliancePowerUpdate"
+        />
+      </div>
+    </div>
 
-          <button 
-            @click="loadConfiguration" 
-            class="config-btn"
-            :disabled="isLoading"
-          >
-            Load Configuration
-          </button>
-
-          <div class="simulation-buttons">
-            <button 
-              v-if="simulationState === 'idle'"
-              @click="startSimulation"
-              class="btn btn-start"
-              :disabled="isLoading"
-            >
-              Start
-            </button>
-
-            <button 
-              v-if="isRunning && simulationState !== 'idle'"
-              @click="pauseSimulation"
-              class="btn btn-pause"
-            >
-              Pause
-            </button>
-
-            <button 
-              v-if="!isRunning && simulationState !== 'idle'"
-              @click="resumeSimulation"
-              class="btn btn-resume"
-            >
-              Resume
-            </button>
-
-            <button 
-              v-if="simulationState !== 'idle'"
-              @click="resetSimulation"
-              class="btn btn-reset"
-            >
-              Reset
-            </button>
-          </div>
-
-          <div class="speed-control">
-            <label>Animation speed:</label>
-            <select v-model="selectedSpeed" @change="onSpeedChange">
-              <option value="1">Slow</option>
-              <option value="2">Medium</option>
-              <option value="3">Fast</option>
-            </select>
-          </div>
+    <!-- AI Optimization controls -->
+    <div class="rl-simulation-controls" v-if="showRlControls">
+       <h3>🤖 AI Optimization Simulation</h3>
+  
+      <div class="rl-simulation-info">
+        <div class="rl-step-display">
+          <div class="rl-step-label">Day:</div>
+          <div class="rl-step-value">{{ currentDay }}</div>
         </div>
-
-        <!-- Time Display -->
-        <div v-if="isRunning || simulationState !== 'idle'" class="time-display">
-          <div class="time-info">
-            <span class="time-label">Simulation Time:</span>
-            <span class="time-value">{{ formattedSimulationTime }}</span>
-            <span v-if="simulationDay > 1" class="day-info">Day {{ simulationDay }}</span>
-          </div>
+    
+        <div class="rl-step-display">
+          <div class="rl-step-label">Time:</div>
+          <div class="rl-step-value">{{ formattedTimeStep }}</div>
+        </div>
+    
+        <div class="rl-step-display">
+          <div class="rl-step-label">Step:</div>
+          <div class="rl-step-value">{{ formattedStepDisplay }}</div>
         </div>
       </div>
+  
+      <div class="rl-step-buttons">
+        <button @click="previousStep" class="rl-btn rl-prev-btn" :disabled="!canGoBack || autoPlayActive">
+          ⏮️ Previous
+        </button>
+    
+        <button @click="nextStep" class="rl-btn rl-next-btn" :disabled="autoPlayActive">
+          ⏭️ Next
+        </button>
+    
+        <button @click="toggleAutoplay" class="rl-btn" :class="{'rl-pause-btn': autoPlayActive, 'rl-play-btn': !autoPlayActive}">
+          {{ autoPlayActive ? '⏸️ Pause' : '▶️ Auto Play' }}
+        </button>
+      </div>
+    </div>
 
-      <!-- Energy Flow Diagram Section -->
-      <div class="energy-diagram-section">
-        <div class="energy-flow-container">
-          <h3>Energy Flow Diagram</h3>
-          <div class="diagram-placeholder">
-            <svg width="100%" height="300" viewBox="0 0 800 300">
-              <!-- Solar Panel -->
-              <g class="energy-component solar" :class="{ active: solarOutput > 0 }">
-                <rect x="50" y="50" width="80" height="60" rx="5" class="component-bg"/>
-                <text x="90" y="75" text-anchor="middle" class="component-label">Solar</text>
-                <text x="90" y="90" text-anchor="middle" class="component-value">{{ solarOutput }} kW</text>
-              </g>
-
-              <!-- Battery -->
-              <g class="energy-component battery" :class="{ active: batteryLevel > 0 }">
-                <rect x="200" y="100" width="80" height="60" rx="5" class="component-bg"/>
-                <text x="240" y="125" text-anchor="middle" class="component-label">Battery</text>
-                <text x="240" y="140" text-anchor="middle" class="component-value">{{ batteryLevel }}%</text>
-              </g>
-
-              <!-- Grid -->
-              <g class="energy-component grid" :class="{ active: gridPower !== 0 }">
-                <rect x="350" y="50" width="80" height="60" rx="5" class="component-bg"/>
-                <text x="390" y="75" text-anchor="middle" class="component-label">Grid</text>
-                <text x="390" y="90" text-anchor="middle" class="component-value">{{ gridPower }} kW</text>
-              </g>
-
-              <!-- House -->
-              <g class="energy-component house active">
-                <rect x="500" y="150" width="100" height="80" rx="5" class="component-bg"/>
-                <text x="550" y="185" text-anchor="middle" class="component-label">Home</text>
-                <text x="550" y="200" text-anchor="middle" class="component-value">{{ houseDemand }} kW</text>
-              </g>
-
-              <!-- Energy Flow Lines -->
-              <g v-if="isRunning">
-                <!-- Solar to House -->
-                <line v-if="solarOutput > 0" x1="130" y1="80" x2="500" y2="180" 
-                      stroke="#f59e0b" stroke-width="3" class="flow-line"/>
-                
-                <!-- Battery to House -->
-                <line v-if="batteryLevel > 20" x1="280" y1="130" x2="500" y2="180" 
-                      stroke="#10b981" stroke-width="2" class="flow-line"/>
-                
-                <!-- Grid to House -->
-                <line v-if="gridPower > 0" x1="430" y1="80" x2="500" y2="150" 
-                      stroke="#8b5cf6" stroke-width="2" class="flow-line"/>
-              </g>
-            </svg>
-          </div>
+    <!-- Demo Information Panel -->
+    <div class="demo-info-panel">
+      <h3>🎯 Demo Features</h3>
+      <div class="demo-features">
+        <div class="demo-feature">
+          <span class="feature-icon">🏠</span>
+          <span>Smart Home Energy Management</span>
+        </div>
+        <div class="demo-feature">
+          <span class="feature-icon">🤖</span>
+          <span>AI-Powered Optimization</span>
+        </div>
+        <div class="demo-feature">
+          <span class="feature-icon">📊</span>
+          <span>Real-time Energy Analytics</span>
+        </div>
+        <div class="demo-feature">
+          <span class="feature-icon">🔋</span>
+          <span>Battery & Solar Integration</span>
         </div>
       </div>
-
-      <!-- Appliances and Environmental Data -->
-      <div class="content-grid">
-        <!-- Appliances Section -->
-        <div class="appliances-section">
-          <h3>Fixed Power Appliances (Run Full Duration)</h3>
-          <div class="appliances-grid">
-            <div 
-              v-for="appliance in appliancesGroup1" 
-              :key="appliance.id"
-              class="appliance-card group-1"
-              :class="{ active: appliance.active }"
-              @click="toggleAppliance(appliance.id)"
-            >
-              <div class="appliance-icon">{{ appliance.icon }}</div>
-              <div class="appliance-name">{{ appliance.name }}</div>
-              <div class="appliance-power">{{ appliance.power }} kW</div>
-              <div class="appliance-status" :class="appliance.active ? 'on' : 'off'">
-                {{ appliance.active ? 'ON' : 'OFF' }}
-              </div>
-            </div>
-          </div>
-
-          <h3>Variable Power Appliances</h3>
-          <div class="appliances-grid">
-            <div 
-              v-for="appliance in appliancesGroup2" 
-              :key="appliance.id"
-              class="appliance-card group-2"
-              :class="{ active: appliance.active }"
-              @click="toggleAppliance(appliance.id)"
-            >
-              <div class="appliance-icon">{{ appliance.icon }}</div>
-              <div class="appliance-name">{{ appliance.name }}</div>
-              <div class="appliance-power">{{ appliance.power }} kW</div>
-              <div class="appliance-status" :class="appliance.active ? 'on' : 'off'">
-                {{ appliance.active ? 'ON' : 'OFF' }}
-              </div>
-            </div>
-          </div>
-
-          <h3>Fixed Power Appliances (Toggle Anytime)</h3>
-          <div class="appliances-grid">
-            <div 
-              v-for="appliance in appliancesGroup3" 
-              :key="appliance.id"
-              class="appliance-card group-3"
-              :class="{ active: appliance.active }"
-              @click="toggleAppliance(appliance.id)"
-            >
-              <div class="appliance-icon">{{ appliance.icon }}</div>
-              <div class="appliance-name">{{ appliance.name }}</div>
-              <div class="appliance-power">{{ appliance.power }} kW</div>
-              <div class="appliance-status" :class="appliance.active ? 'on' : 'off'">
-                {{ appliance.active ? 'ON' : 'OFF' }}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Environmental Data Section -->
-        <div class="environmental-section">
-          <h3>Environmental Data</h3>
-          
-          <!-- Solar & Battery Chart -->
-          <div class="chart-container">
-            <h4>Solar & Battery (kW)</h4>
-            <div class="chart-placeholder">
-              <canvas ref="solarChart" width="400" height="200"></canvas>
-            </div>
-            <div class="current-value">Current: {{ solarOutput }} kW</div>
-          </div>
-
-          <!-- Electricity Price Chart -->
-          <div class="chart-container">
-            <h4>Electricity Price ($/kWh)</h4>
-            <div class="chart-placeholder">
-              <canvas ref="priceChart" width="400" height="200"></canvas>
-            </div>
-            <div class="current-value">Current: ${{ currentPrice }}/kWh</div>
-          </div>
-
-          <!-- Temperature Chart -->
-          <div class="chart-container">
-            <h4>Temperature (°C)</h4>
-            <div class="chart-placeholder">
-              <canvas ref="tempChart" width="400" height="200"></canvas>
-            </div>
-            <div class="current-value">Current: {{ currentTemperature }}°C</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Energy Statistics -->
-      <div class="energy-stats">
-        <div class="stat-card solar">
-          <div class="stat-title">Solar Production</div>
-          <div class="stat-value">{{ solarOutput }} kW</div>
-        </div>
-        <div class="stat-card battery">
-          <div class="stat-title">Battery Level</div>
-          <div class="stat-value">{{ batteryLevel }}%</div>
-        </div>
-        <div class="stat-card grid">
-          <div class="stat-title">Grid Usage</div>
-          <div class="stat-value">{{ gridPower }} kW</div>
-        </div>
-        <div class="stat-card home">
-          <div class="stat-title">Home Demand</div>
-          <div class="stat-value">{{ houseDemand }} kW</div>
-        </div>
+      <div class="demo-instructions">
+        <p>👆 <strong>Try it:</strong> Click the Start button above to begin the simulation, toggle appliances, and watch the AI optimize your energy usage!</p>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+// Import the main component that contains all the logic
+// For demo mode, we'll create a mock version if the original isn't available
+let EnergyFlowDiagram;
+
+try {
+  // Try to import the real component
+  EnergyFlowDiagram = () => import('./components/EnergyFlowDiagram.vue');
+} catch (error) {
+  // Fallback for demo mode - create a mock component
+  EnergyFlowDiagram = {
+    template: `
+      <div class="energy-flow-container">
+        <div class="controls">   
+          <div class="config-controls">
+            <div class="simulation-time-input">
+              <label for="simulation-hours">Simulation hours:</label>
+              <input 
+                id="simulation-hours" 
+                type="number" 
+                v-model.number="simulationHours" 
+                min="0.1" 
+                step="0.1"
+                placeholder="Hours"
+              />
+              <span>hours</span>
+            </div>
+
+            <button @click="loadConfigFile" class="config-btn">
+              📁 Load Configuration
+            </button>
+          </div>
+          
+          <div class="control-buttons">
+            <button 
+              v-if="simulationState === 'idle'"
+              @click="startSimulation"
+              class="start-btn"
+            >
+              ▶️ Start
+            </button>
+
+            <button 
+              v-if="isRunning && simulationState !== 'idle'"
+              @click="pauseSimulation"
+              class="pause-btn"
+            >
+              ⏸️ Pause
+            </button>
+
+            <button 
+              v-if="!isRunning && simulationState !== 'idle' && !simulationCompleted"
+              @click="resumeSimulation"
+              class="resume-btn"
+            >
+              ▶️ Resume
+            </button>
+
+            <button 
+              v-if="simulationState !== 'idle'"
+              @click="resetSimulation"
+              class="reset-btn"
+            >
+              🔄 Reset
+            </button>
+            
+            <div class="speed-control">
+              <span>⚡ Animation speed:</span>
+              <select v-model="selectedSpeed" @change="onSpeedChange">
+                <option value="1">🐌 Slow</option>
+                <option value="2">🚶 Medium</option>
+                <option value="3">🏃 Fast</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="simulation-time-display" v-if="isRunning || simulationState !== 'idle'">
+          <div class="time-icon">🕒</div>
+          <div class="time-value">{{ formattedSimulationTime }}</div>
+          <div class="time-day" v-if="localSimulationDay > 1">Day {{ localSimulationDay }}</div>
+        </div>
+        
+        <div class="diagram">
+          <svg width="100%" height="400" viewBox="0 0 1000 400">
+            <!-- Background Grid -->
+            <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+              <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#eee" stroke-width="1" />
+            </pattern>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+            
+            <!-- Solar Panel -->
+            <g class="device-icon solar" :class="{ active: solarOutput > 0 }">
+              <rect x="50" y="50" width="100" height="80" rx="10" fill="#fff9e6" stroke="#f59e0b" stroke-width="3"/>
+              <text x="100" y="75" text-anchor="middle" class="device-label">☀️ Solar</text>
+              <text x="100" y="95" text-anchor="middle" class="device-value">{{ solarOutput }} kW</text>
+            </g>
+
+            <!-- Battery -->
+            <g class="device-icon battery" :class="{ active: batteryLevel > 10 }">
+              <rect x="300" y="100" width="100" height="80" rx="10" fill="#f0fdf4" stroke="#10b981" stroke-width="3"/>
+              <text x="350" y="125" text-anchor="middle" class="device-label">🔋 Battery</text>
+              <text x="350" y="145" text-anchor="middle" class="device-value">{{ batteryLevel }}%</text>
+            </g>
+
+            <!-- Grid -->
+            <g class="device-icon grid" :class="{ active: Math.abs(gridPower) > 0 }">
+              <rect x="650" y="50" width="100" height="80" rx="10" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="3"/>
+              <text x="700" y="75" text-anchor="middle" class="device-label">⚡ Grid</text>
+              <text x="700" y="95" text-anchor="middle" class="device-value">{{ gridPower }} kW</text>
+            </g>
+
+            <!-- House -->
+            <g class="device-icon house">
+              <rect x="425" y="250" width="150" height="100" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="3"/>
+              <text x="500" y="285" text-anchor="middle" class="device-label">🏠 Home</text>
+              <text x="500" y="305" text-anchor="middle" class="device-value">{{ houseDemand }} kW</text>
+            </g>
+            
+            <!-- Energy Flow Lines with Animation -->
+            <g v-if="isRunning">
+              <!-- Solar to House -->
+              <line v-if="solarOutput > 0" x1="150" y1="90" x2="450" y2="280" 
+                    stroke="#f59e0b" stroke-width="4" class="flow-line">
+                <animate attributeName="stroke-dasharray" values="0,20;20,0" dur="2s" repeatCount="indefinite"/>
+              </line>
+              
+              <!-- Battery to House -->
+              <line v-if="batteryLevel > 20 && batteryPower < 0" x1="400" y1="140" x2="470" y2="250" 
+                    stroke="#10b981" stroke-width="3" class="flow-line">
+                <animate attributeName="stroke-dasharray" values="0,15;15,0" dur="1.5s" repeatCount="indefinite"/>
+              </line>
+              
+              <!-- Grid to House -->
+              <line v-if="gridPower > 0" x1="650" y1="90" x2="550" y2="250" 
+                    stroke="#8b5cf6" stroke-width="3" class="flow-line">
+                <animate attributeName="stroke-dasharray" values="0,15;15,0" dur="1.8s" repeatCount="indefinite"/>
+              </line>
+
+              <!-- Solar to Battery -->
+              <line v-if="solarOutput > houseDemand && batteryLevel < 100" x1="150" y1="100" x2="300" y2="130" 
+                    stroke="#f59e0b" stroke-width="2" class="flow-line">
+                <animate attributeName="stroke-dasharray" values="0,10;10,0" dur="1.2s" repeatCount="indefinite"/>
+              </line>
+            </g>
+          </svg>
+        </div>
+        
+        <!-- Appliances Section -->
+        <div class="appliances">
+          <div class="appliance-group">
+            <h4>🔧 Fixed Power Appliances (Run Full Duration)</h4>
+            <div class="appliances-group">
+              <div 
+                v-for="app in appliancesGroup1" 
+                :key="app.id"
+                class="appliance-card group-1"
+                :class="{ active: app.active }"
+                @click="toggleAppliance(app.id)"
+              >
+                <div class="appliance-icon">{{ getApplianceIcon(app.type) }}</div>
+                <div class="appliance-name">{{ app.name }}</div>
+                <div class="appliance-power">{{ app.power }} kW</div>
+                <div class="appliance-status" :class="app.active ? 'on' : 'off'">
+                  {{ app.active ? 'ON' : 'OFF' }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="appliance-group">
+            <h4>⚙️ Variable Power Appliances</h4>
+            <div class="appliances-group">
+              <div 
+                v-for="app in appliancesGroup2" 
+                :key="app.id"
+                class="appliance-card group-2"
+                :class="{ active: app.active }"
+                @click="toggleAppliance(app.id)"
+              >
+                <div class="appliance-icon">{{ getApplianceIcon(app.type) }}</div>
+                <div class="appliance-name">{{ app.name }}</div>
+                <div class="appliance-power">{{ app.power }} kW</div>
+                <div class="appliance-status" :class="app.active ? 'on' : 'off'">
+                  {{ app.active ? 'ON' : 'OFF' }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="appliance-group">
+            <h4>🎛️ Fixed Power Appliances (Toggle Anytime)</h4>
+            <div class="appliances-group">
+              <div 
+                v-for="app in appliancesGroup3" 
+                :key="app.id"
+                class="appliance-card group-3"
+                :class="{ active: app.active }"
+                @click="toggleAppliance(app.id)"
+              >
+                <div class="appliance-icon">{{ getApplianceIcon(app.type) }}</div>
+                <div class="appliance-name">{{ app.name }}</div>
+                <div class="appliance-power">{{ app.power }} kW</div>
+                <div class="appliance-status" :class="app.active ? 'on' : 'off'">
+                  {{ app.active ? 'ON' : 'OFF' }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Energy Stats -->
+        <div class="energy-stats">
+          <div class="stat-card solar">
+            <div class="stat-title">☀️ Solar Production</div>
+            <div class="stat-value">{{ solarOutput }} kW</div>
+          </div>
+          <div class="stat-card battery">
+            <div class="stat-title">🔋 Battery Level</div>
+            <div class="stat-value">{{ batteryLevel }}%</div>
+          </div>
+          <div class="stat-card grid">
+            <div class="stat-title">⚡ Grid Usage</div>
+            <div class="stat-value">{{ gridPower }} kW</div>
+          </div>
+          <div class="stat-card home">
+            <div class="stat-title">🏠 Home Demand</div>
+            <div class="stat-value">{{ houseDemand }} kW</div>
+          </div>
+        </div>
+      </div>
+    `,
+    props: {
+      solarOutput: { type: Number, default: 0 },
+      batteryLevel: { type: Number, default: 35 },
+      batteryStatus: { type: String, default: 'empty' },
+      batteryPower: { type: Number, default: 0 },
+      gridPower: { type: Number, default: 0 },
+      houseDemand: { type: Number, default: 0 },
+      appliances: { type: Array, default: () => [] },
+      isRunning: { type: Boolean, default: false },
+      simulationState: { type: String, default: 'idle' },
+      rlPrediction: { type: Object, default: null },
+      simulationElapsedMinutes: { type: Number, default: 0 },
+      simulationFormattedTime: { type: String, default: "00:00" },
+      simulationDay: { type: Number, default: 1 },
+      homeTemperatureHistory: { type: Array, default: () => [] },
+      waterTemperatureHistory: { type: Array, default: () => [] },
+      appliancePowerHistory: { type: Object, default: () => ({}) },
+      simulationCompleted: { type: Boolean, default: false }
+    },
+    data() {
+      return {
+        simulationHours: 1,
+        selectedSpeed: 2,
+        localSimulationDay: 1,
+        formattedSimulationTime: "00:00"
+      };
+    },
+    computed: {
+      appliancesGroup1() {
+        return this.appliances.filter(a => a.group === 1);
+      },
+      appliancesGroup2() {
+        return this.appliances.filter(a => a.group === 2);
+      },
+      appliancesGroup3() {
+        return this.appliances.filter(a => a.group === 3);
+      }
+    },
+    methods: {
+      getApplianceIcon(type) {
+        const icons = {
+          dishwasher: '🍽️',
+          wash_machine: '👕',
+          clothes_dryer: '🌀',
+          hvac: '❄️',
+          water_heater: '🚿',
+          ev_charger: '🔌',
+          tv: '📺',
+          refrigerator: '🧊',
+          lights: '💡',
+          vacuum: '🧹',
+          hair_dryer: '💨'
+        };
+        return icons[type] || '⚡';
+      },
+      toggleAppliance(id) {
+        this.$emit('toggle-appliance', id);
+      },
+      startSimulation() {
+        this.$emit('start-simulation');
+      },
+      pauseSimulation() {
+        this.$emit('pause-simulation');
+      },
+      resumeSimulation() {
+        this.$emit('resume-simulation');
+      },
+      resetSimulation() {
+        this.$emit('reset-simulation');
+      },
+      loadConfigFile() {
+        console.log('Load config in demo mode');
+      },
+      onSpeedChange() {
+        this.$emit('speed-changed', { animationSpeed: this.selectedSpeed });
+      }
+    },
+    watch: {
+      simulationFormattedTime(newVal) {
+        this.formattedSimulationTime = newVal;
+      },
+      simulationDay(newVal) {
+        this.localSimulationDay = newVal;
+      }
+    }
+  };
+}
+
 export default {
-  name: 'SmartHomeEnergySimulator',
-  
+  components: {
+    EnergyFlowDiagram
+  },
+
   data() {
     return {
-      isLoading: false,
-      simulationHours: 1,
-      selectedSpeed: 2,
-      
+      currentSimulationStep: 0,
+      showRlControls: true,
+
       // Simulation state
-      simulationState: 'idle', // 'idle', 'running', 'paused'
-      isRunning: false,
+      simulationRunning: false,
+      simulationState: 'idle',
       simulationTimer: null,
+      simulationInterval: 500,
       simulationElapsedTime: 0,
-      simulationDay: 1,
       
       // Energy data
       solarOutput: 0,
       batteryLevel: 35,
+      batteryStatus: 'empty',
+      batteryPower: 0,
       gridPower: 0,
       houseDemand: 0,
-      currentPrice: 0.025,
-      currentTemperature: 20,
+
+      // Simulation clock
+      simulationElapsedMinutes: 0,
+      simulationFormattedTime: "00:00",
+      simulationDay: 1,
+
+      simulationSteps: 0,
+      maxSimulationSteps: null,
+      simulationCompleted: false,
+
+      energyModelState: {
+        indoorTemperature: 24.0,
+        waterTemperature: 55.0,
+        evSoC: 0.0,
+        evConnected: false,
+        hvacPower: 0,
+        waterHeaterPower: 0,
+        evPower: 0
+      },
       
-      // Demo appliances data
+      // Devices/appliances
       appliances: [
         // Group 1: Fixed power, must run for full duration
-        { id: 1, name: 'Dishwasher', icon: '🍽️', power: 1.8, active: false, group: 1 },
-        { id: 2, name: 'Wash Machine', icon: '👕', power: 0.4, active: false, group: 1 },
-        { id: 3, name: 'Clothes Dryer', icon: '🌀', power: 1.2, active: false, group: 1 },
-        
+        { id: 1, name: 'Dishwasher', type: 'dishwasher', power: 1.8, active: false, group: 1 },
+        { id: 2, name: 'Wash Machine', type: 'wash_machine', power: 0.4, active: false, group: 1 },
+        { id: 3, name: 'Clothes Dryer', type: 'clothes_dryer', power: 1.2, active: false, group: 1 },
+      
         // Group 2: Variable power, can be toggled during allowed time
-        { id: 4, name: 'HVAC', icon: '❄️', power: 2.5, active: false, group: 2 },
-        { id: 5, name: 'Water Heater', icon: '🚿', power: 4.5, active: false, group: 2 },
-        { id: 6, name: 'EV Charger', icon: '🔌', power: 6.0, active: false, group: 2 },
-        
+        { id: 4, name: 'HVAC', type: 'hvac', power: 2.5, active: false, group: 2 },
+        { id: 5, name: 'Water Heater', type: 'water_heater', power: 4.5, active: false, group: 2 },
+        { id: 6, name: 'EV Charger', type: 'ev_charger', power: 6.0, active: false, group: 2 },
+      
         // Group 3: Fixed power, on for entire duration
-        { id: 7, name: 'TV', icon: '📺', power: 0.1, active: false, group: 3 },
-        { id: 8, name: 'Refrigerator', icon: '🧊', power: 0.2, active: true, group: 3 },
-        { id: 9, name: 'Lights', icon: '💡', power: 0.2, active: false, group: 3 },
-        { id: 10, name: 'Vacuum Cleaner', icon: '🧹', power: 1.2, active: false, group: 3 },
-        { id: 11, name: 'Hair Dryer', icon: '💨', power: 1.0, active: false, group: 3 }
+        { id: 7, name: 'TV', type: 'tv', power: 0.1, active: false, group: 3 },
+        { id: 8, name: 'Refrigerator', type: 'refrigerator', power: 0.2, active: true, group: 3 },
+        { id: 9, name: 'Lights', type: 'lights', power: 0.2, active: false, group: 3 },
+        { id: 10, name: 'Vacuum Cleaner', type: 'vacuum', power: 1.2, active: false, group: 3 },
+        { id: 11, name: 'Hair Dryer', type: 'hair_dryer', power: 1.0, active: false, group: 3 }
       ],
       
-      // Chart data
-      chartData: {
-        solar: [],
-        price: [],
-        temperature: []
+      // Initial values to reset to
+      initialState: {
+        solarOutput: 0,
+        batteryLevel: 35,
+        batteryStatus: 'empty',
+        batteryPower: 0,
+        gridPower: 0,
+        houseDemand: 0.2
+      },
+
+      // AI/RL related data
+      rlPrediction: null,
+      currentDay: 1,
+      currentTimeStep: 0,
+      autoPlayActive: false,
+      autoPlayTimer: null,
+      
+      // History data for charts
+      homeTemperatureHistory: new Array(96).fill(null),
+      waterTemperatureHistory: new Array(96).fill(null),
+      appliancePowerHistory: {
+        dishwasher: new Array(96).fill(0),
+        wash_machine: new Array(96).fill(0),
+        clothes_dryer: new Array(96).fill(0)
       }
     };
   },
-  
+
   computed: {
-    formattedSimulationTime() {
-      const hours = Math.floor(this.simulationElapsedTime / 60);
-      const minutes = Math.floor(this.simulationElapsedTime % 60);
+    canGoBack() {
+      return !(this.currentDay === 1 && this.currentTimeStep === 0);
+    },
+
+    formattedTimeStep() {
+      const totalMinutes = this.currentTimeStep * 15;
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
       return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
     },
-    
-    appliancesGroup1() {
-      return this.appliances.filter(a => a.group === 1);
-    },
-    
-    appliancesGroup2() {
-      return this.appliances.filter(a => a.group === 2);
-    },
-    
-    appliancesGroup3() {
-      return this.appliances.filter(a => a.group === 3);
+
+    formattedStepDisplay() {
+      return `${this.currentTimeStep + 1}/96`;
     }
   },
   
+  mounted() {
+    console.log('Smart Home Energy Simulator Demo Mode Initialized');
+    this.startDemoSimulation();
+  },
+
   methods: {
-    loadConfiguration() {
-      this.isLoading = true;
-      // Simulate loading configuration
-      setTimeout(() => {
-        this.isLoading = false;
-        console.log('Configuration loaded (demo mode)');
-      }, 1000);
-    },
-    
-    startSimulation() {
-      this.simulationState = 'running';
-      this.isRunning = true;
-      this.simulationElapsedTime = 0;
+    startDemoSimulation() {
+      // Auto-start a demo simulation for Vercel
+      this.simulationRunning = true;
+      this.simulationState = 'manual';
       
-      // Start simulation timer
       this.simulationTimer = setInterval(() => {
-        this.updateSimulation();
-      }, 1000);
-      
-      console.log('Simulation started');
+        this.updateDemoSimulation();
+      }, 2000); // Update every 2 seconds for demo
     },
-    
+
+    updateDemoSimulation() {
+      // Simulate time progression
+      this.simulationElapsedMinutes += 15; // 15 minutes per step
+      const hours = Math.floor(this.simulationElapsedMinutes / 60) % 24;
+      const minutes = this.simulationElapsedMinutes % 60;
+      this.simulationFormattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      
+      // Simulate solar output based on time
+      const timeOfDay = hours / 24;
+      if (hours >= 6 && hours <= 18) {
+        const solarFactor = Math.sin((hours - 6) / 12 * Math.PI);
+        this.solarOutput = parseFloat((5 * solarFactor * (0.8 + Math.random() * 0.4)).toFixed(1));
+      } else {
+        this.solarOutput = 0;
+      }
+
+      // Calculate house demand
+      this.houseDemand = parseFloat(
+        this.appliances
+          .filter(app => app.active)
+          .reduce((sum, app) => sum + app.power, 0)
+          .toFixed(1)
+      );
+
+      // Simple battery simulation
+      if (this.solarOutput > this.houseDemand && this.batteryLevel < 100) {
+        this.batteryLevel = Math.min(100, this.batteryLevel + 2);
+        this.batteryStatus = 'charging';
+        this.batteryPower = Math.min(2.4, this.solarOutput - this.houseDemand);
+      } else if (this.houseDemand > this.solarOutput && this.batteryLevel > 10) {
+        this.batteryLevel = Math.max(10, this.batteryLevel - 1);
+        this.batteryStatus = 'discharging';
+        this.batteryPower = -Math.min(2.4, this.houseDemand - this.solarOutput);
+      } else {
+        this.batteryStatus = 'empty';
+        this.batteryPower = 0;
+      }
+
+      // Grid power calculation
+      const solarToHouse = Math.min(this.solarOutput, this.houseDemand);
+      const remainingDemand = Math.max(0, this.houseDemand - solarToHouse);
+      const batteryContribution = this.batteryStatus === 'discharging' ? Math.abs(this.batteryPower) : 0;
+      this.gridPower = parseFloat(Math.max(0, remainingDemand - batteryContribution).toFixed(1));
+
+      // Auto-toggle some appliances for demo
+      this.autoDemoAppliances(hours);
+
+      // Reset after 24 hours
+      if (this.simulationElapsedMinutes >= 24 * 60) {
+        this.simulationElapsedMinutes = 0;
+        this.simulationDay++;
+      }
+    },
+
+    autoDemoAppliances(hour) {
+      // Turn on HVAC when hot
+      if (hour === 14 && !this.appliances[3].active) { // 2 PM
+        this.toggleAppliance(4);
+      }
+      
+      // Turn on lights in evening
+      if (hour === 18 && !this.appliances[8].active) { // 6 PM
+        this.toggleAppliance(9);
+      }
+      
+      // Turn off lights at night
+      if (hour === 23 && this.appliances[8].active) { // 11 PM
+        this.toggleAppliance(9);
+      }
+      
+      // Start dishwasher in evening
+      if (hour === 19 && !this.appliances[0].active) { // 7 PM
+        this.toggleAppliance(1);
+      }
+    },
+
+    // Event handlers for the EnergyFlowDiagram component
+    startSimulation(options = {}) {
+      console.log('Start simulation', options);
+      this.simulationRunning = true;
+      this.simulationState = 'manual';
+    },
+
     pauseSimulation() {
-      this.isRunning = false;
+      console.log('Pause simulation');
+      this.simulationRunning = false;
       if (this.simulationTimer) {
         clearInterval(this.simulationTimer);
         this.simulationTimer = null;
       }
-      console.log('Simulation paused');
     },
-    
+
     resumeSimulation() {
-      this.isRunning = true;
-      this.simulationTimer = setInterval(() => {
-        this.updateSimulation();
-      }, 1000);
-      console.log('Simulation resumed');
+      console.log('Resume simulation');
+      this.simulationRunning = true;
+      this.startDemoSimulation();
     },
-    
+
     resetSimulation() {
+      console.log('Reset simulation');
+      this.simulationRunning = false;
       this.simulationState = 'idle';
-      this.isRunning = false;
-      this.simulationElapsedTime = 0;
+      this.simulationElapsedMinutes = 0;
+      this.simulationFormattedTime = "00:00";
       this.simulationDay = 1;
       
       if (this.simulationTimer) {
@@ -381,7 +670,7 @@ export default {
         this.simulationTimer = null;
       }
       
-      // Reset all appliances
+      // Reset appliances
       this.appliances.forEach(app => {
         if (app.id !== 8) { // Keep refrigerator on
           app.active = false;
@@ -389,238 +678,312 @@ export default {
       });
       
       // Reset energy values
-      this.solarOutput = 0;
-      this.batteryLevel = 35;
-      this.gridPower = 0;
-      this.updateHouseDemand();
+      Object.assign(this, this.initialState);
       
-      console.log('Simulation reset');
+      // Restart demo after a brief pause
+      setTimeout(() => {
+        this.startDemoSimulation();
+      }, 1000);
     },
-    
-    updateSimulation() {
-      // Increment elapsed time based on speed
-      this.simulationElapsedTime += this.selectedSpeed;
-      
-      // Update day counter
-      this.simulationDay = Math.floor(this.simulationElapsedTime / (24 * 60)) + 1;
-      
-      // Simulate solar output based on time of day
-      const timeOfDay = (this.simulationElapsedTime % (24 * 60)) / (24 * 60);
-      this.updateSolarOutput(timeOfDay);
-      
-      // Simulate price fluctuations
-      this.updateElectricityPrice(timeOfDay);
-      
-      // Simulate temperature changes
-      this.updateTemperature(timeOfDay);
-      
-      // Update battery and grid based on energy balance
-      this.updateEnergyBalance();
-      
-      // Auto-toggle some appliances based on time
-      this.autoToggleAppliances(timeOfDay);
-    },
-    
-    updateSolarOutput(timeOfDay) {
-      // Solar production follows a bell curve during daylight hours
-      if (timeOfDay >= 0.25 && timeOfDay <= 0.75) { // 6 AM to 6 PM
-        const solarTime = (timeOfDay - 0.25) * 2; // Normalize to 0-1
-        const efficiency = Math.sin(solarTime * Math.PI);
-        this.solarOutput = parseFloat((5 * efficiency * (0.8 + Math.random() * 0.4)).toFixed(1));
-      } else {
-        this.solarOutput = 0;
-      }
-    },
-    
-    updateElectricityPrice(timeOfDay) {
-      // Peak pricing during evening hours
-      const hour = timeOfDay * 24;
-      if (hour >= 16 && hour <= 20) {
-        this.currentPrice = 0.045 + Math.random() * 0.01;
-      } else if (hour >= 0 && hour <= 6) {
-        this.currentPrice = 0.015 + Math.random() * 0.005;
-      } else {
-        this.currentPrice = 0.025 + Math.random() * 0.008;
-      }
-      this.currentPrice = parseFloat(this.currentPrice.toFixed(3));
-    },
-    
-    updateTemperature(timeOfDay) {
-      // Temperature varies throughout the day
-      const hour = timeOfDay * 24;
-      const baseTemp = 20 + 8 * Math.sin((hour - 6) / 24 * 2 * Math.PI);
-      this.currentTemperature = parseFloat((baseTemp + Math.random() * 2 - 1).toFixed(1));
-    },
-    
-    updateEnergyBalance() {
-      const solarToHouse = Math.min(this.solarOutput, this.houseDemand);
-      const remainingDemand = Math.max(0, this.houseDemand - solarToHouse);
-      const excessSolar = Math.max(0, this.solarOutput - solarToHouse);
-      
-      // Battery logic
-      if (excessSolar > 0 && this.batteryLevel < 100) {
-        // Charge battery with excess solar
-        const chargeRate = Math.min(excessSolar, 2.4); // Max charge rate
-        this.batteryLevel = Math.min(100, this.batteryLevel + chargeRate * 0.1);
-      } else if (remainingDemand > 0 && this.batteryLevel > 10) {
-        // Discharge battery to meet demand
-        const dischargeRate = Math.min(remainingDemand, 2.4);
-        this.batteryLevel = Math.max(10, this.batteryLevel - dischargeRate * 0.1);
-        this.gridPower = Math.max(0, remainingDemand - dischargeRate);
-      } else {
-        this.gridPower = remainingDemand;
-      }
-      
-      // Export excess solar to grid
-      if (excessSolar > 0 && this.batteryLevel >= 99) {
-        this.gridPower = -excessSolar; // Negative indicates export
-      }
-      
-      this.batteryLevel = parseFloat(this.batteryLevel.toFixed(1));
-      this.gridPower = parseFloat(this.gridPower.toFixed(1));
-    },
-    
-    autoToggleAppliances(timeOfDay) {
-      const hour = timeOfDay * 24;
-      
-      // Auto-start dishwasher in evening
-      if (hour >= 18 && hour < 18.1 && !this.appliances[0].active) {
-        this.toggleAppliance(1);
-      }
-      
-      // Auto-start HVAC when temperature is extreme
-      const hvac = this.appliances.find(a => a.id === 4);
-      if ((this.currentTemperature > 25 || this.currentTemperature < 18) && !hvac.active) {
-        this.toggleAppliance(4);
-      } else if (this.currentTemperature >= 18 && this.currentTemperature <= 25 && hvac.active) {
-        this.toggleAppliance(4);
-      }
-      
-      // Turn on lights in evening
-      if (hour >= 18 && hour < 18.1 && !this.appliances[8].active) {
-        this.toggleAppliance(9);
-      }
-      
-      // Turn off lights in morning
-      if (hour >= 7 && hour < 7.1 && this.appliances[8].active) {
-        this.toggleAppliance(9);
-      }
-    },
-    
+
     toggleAppliance(id) {
-      const appliance = this.appliances.find(a => a.id === id);
-      if (appliance) {
-        appliance.active = !appliance.active;
-        this.updateHouseDemand();
-        console.log(`${appliance.name} ${appliance.active ? 'ON' : 'OFF'}`);
+      const appIndex = this.appliances.findIndex(app => app.id === id);
+      if (appIndex !== -1) {
+        this.appliances[appIndex].active = !this.appliances[appIndex].active;
+        console.log(`${this.appliances[appIndex].name} ${this.appliances[appIndex].active ? 'ON' : 'OFF'}`);
       }
     },
-    
-    updateHouseDemand() {
-      this.houseDemand = parseFloat(
-        this.appliances
-          .filter(app => app.active)
-          .reduce((sum, app) => sum + app.power, 0)
-          .toFixed(1)
-      );
+
+    updateHouseDemand(newDemand) {
+      this.houseDemand = newDemand;
     },
-    
-    onSpeedChange() {
-      console.log(`Animation speed changed to: ${this.selectedSpeed}`);
+
+    updateGridPower(newPower) {
+      this.gridPower = newPower;
+    },
+
+    handleConfigUpdated(configData) {
+      console.log('Config updated', configData);
+    },
+
+    handleSpeedChange(speedData) {
+      console.log('Speed changed', speedData);
+    },
+
+    handleBatteryCritical() {
+      console.log('Battery critical');
+    },
+
+    onHistoryUpdated(data) {
+      console.log('History updated', data);
+    },
+
+    handleHourlyDataUpdate(data) {
+      console.log('Hourly data update', data);
+    },
+
+    handleSimulationComplete() {
+      console.log('Simulation complete');
+      this.simulationCompleted = true;
+    },
+
+    handleEnergyModelsUpdate(data) {
+      this.energyModelState = { ...this.energyModelState, ...data };
+    },
+
+    handleAppliancePowerUpdate(data) {
+      const appIndex = this.appliances.findIndex(app => app.id === data.id);
+      if (appIndex !== -1) {
+        this.appliances[appIndex].power = data.power;
+      }
+    },
+
+    // AI/RL Methods
+    previousStep() {
+      if (this.canGoBack && !this.autoPlayActive) {
+        this.currentTimeStep = (this.currentTimeStep - 1 + 96) % 96;
+        if (this.currentTimeStep === 95) {
+          this.currentDay = Math.max(1, this.currentDay - 1);
+        }
+        this.requestRlPrediction();
+      }
+    },
+
+    nextStep() {
+      if (this.autoPlayActive) return;
+      
+      this.currentTimeStep = (this.currentTimeStep + 1) % 96;
+      if (this.currentTimeStep === 0) {
+        this.currentDay = Math.min(60, this.currentDay + 1);
+      }
+      this.requestRlPrediction();
+    },
+
+    toggleAutoplay() {
+      if (this.autoPlayTimer) {
+        clearInterval(this.autoPlayTimer);
+        this.autoPlayTimer = null;
+      }
+      
+      this.autoPlayActive = !this.autoPlayActive;
+      
+      if (this.autoPlayActive) {
+        this.simulationState = 'ai';
+        this.autoPlayTimer = setInterval(() => {
+          this.currentTimeStep = (this.currentTimeStep + 1) % 96;
+          if (this.currentTimeStep === 0) {
+            this.currentDay = Math.min(60, this.currentDay + 1);
+          }
+          this.requestRlPrediction();
+        }, 1000);
+      } else {
+        this.simulationState = 'manual';
+      }
+    },
+
+    requestRlPrediction() {
+      // Mock RL prediction for demo
+      const mockPrediction = {
+        timestamp: this.currentTimeStep,
+        day: this.currentDay,
+        environment: {
+          price: 0.025 + Math.random() * 0.02,
+          solar_production: this.solarOutput,
+          outside_temp: 20 + Math.random() * 10
+        },
+        temperatures: {
+          home: {
+            current: 22 + Math.random() * 4,
+            setpoint: 22
+          },
+          water: {
+            current: 58 + Math.random() * 4,
+            setpoint: 60
+          }
+        },
+        battery: {
+          soc: this.batteryLevel / 100,
+          power: this.batteryPower
+        },
+        ev: {
+          soc: Math.random() * 0.8,
+          power: Math.random() * 3,
+          connected: Math.random() > 0.3
+        },
+        appliances: {
+          controllable: {
+            hvac: {
+              power: this.appliances[3].active ? this.appliances[3].power : 0,
+              active: this.appliances[3].active
+            },
+            water_heater: {
+              power: this.appliances[4].active ? this.appliances[4].power : 0,
+              active: this.appliances[4].active
+            }
+          },
+          shiftable: {
+            dishwasher: {
+              active: this.appliances[0].active,
+              power: this.appliances[0].active ? this.appliances[0].power : 0,
+              progress: Math.floor(Math.random() * 4),
+              total_duration: 4
+            },
+            wash_machine: {
+              active: this.appliances[1].active,
+              power: this.appliances[1].active ? this.appliances[1].power : 0,
+              progress: Math.floor(Math.random() * 6),
+              total_duration: 6
+            },
+            clothes_dryer: {
+              active: this.appliances[2].active,
+              power: this.appliances[2].active ? this.appliances[2].power : 0,
+              progress: Math.floor(Math.random() * 5),
+              total_duration: 5
+            }
+          },
+          fixed: {
+            tv: { active: this.appliances[6].active, power: this.appliances[6].power },
+            refrigerator: { active: this.appliances[7].active, power: this.appliances[7].power },
+            lights: { active: this.appliances[8].active, power: this.appliances[8].power },
+            vacuum: { active: this.appliances[9].active, power: this.appliances[9].power },
+            hair_dryer: { active: this.appliances[10].active, power: this.appliances[10].power }
+          }
+        },
+        energy_flow: {
+          grid: { net_power: this.gridPower },
+          house: { demand: { total: this.houseDemand } }
+        }
+      };
+      
+      this.rlPrediction = mockPrediction;
     }
   },
-  
-  mounted() {
-    console.log('Smart Home Energy Simulator Demo initialized');
-    this.updateHouseDemand();
-  },
-  
+
   beforeUnmount() {
     if (this.simulationTimer) {
       clearInterval(this.simulationTimer);
+    }
+    if (this.autoPlayTimer) {
+      clearInterval(this.autoPlayTimer);
     }
   }
 };
 </script>
 
-<style scoped>
-.app-container {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+<style>
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
 }
 
-.app-header {
-  background: white;
-  padding: 1rem 2rem;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  margin-bottom: 20px;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
-.app-header h1 {
+header h1 {
   margin: 0;
   color: #2d3748;
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: 700;
+  background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .demo-badge {
   background: linear-gradient(45deg, #ff6b6b, #ee5a24);
   color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
+  padding: 0.8rem 1.5rem;
+  border-radius: 25px;
   font-weight: 600;
-  font-size: 0.9rem;
-  box-shadow: 0 2px 8px rgba(255,107,107,0.3);
+  font-size: 1rem;
+  box-shadow: 0 4px 15px rgba(255,107,107,0.3);
+  animation: pulse 2s infinite;
 }
 
-.main-content {
-  padding: 2rem;
-  max-width: 1400px;
-  margin: 0 auto;
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
-.control-panel {
+.main-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.diagram-section {
+  flex: 1;
+  min-width: 100%;
+}
+
+.rl-simulation-controls {
   background: white;
   border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
+  padding: 20px;
+  margin-bottom: 20px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  border-left: 5px solid #3b82f6;
 }
 
-.simulation-controls {
+.rl-simulation-controls h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #1f2937;
+  font-size: 1.3rem;
+}
+
+.rl-simulation-info {
   display: flex;
+  gap: 20px;
+  margin-bottom: 15px;
   flex-wrap: wrap;
-  gap: 1rem;
-  align-items: center;
 }
 
-.control-group {
+.rl-step-display {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
+  background: #f8fafc;
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
 }
 
-.control-group input {
-  width: 80px;
-  padding: 0.5rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 0.9rem;
+.rl-step-label {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
 }
 
-.simulation-buttons {
+.rl-step-value {
+  font-size: 16px;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.rl-step-buttons {
   display: flex;
-  gap: 0.5rem;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.btn {
-  padding: 0.6rem 1.2rem;
+.rl-btn {
+  padding: 10px 20px;
   border: none;
   border-radius: 8px;
   font-weight: 600;
@@ -629,42 +992,170 @@ export default {
   font-size: 0.9rem;
 }
 
-.btn-start {
-  background: linear-gradient(45deg, #10b981, #059669);
-  color: white;
-}
-
-.btn-pause {
-  background: linear-gradient(45deg, #ef4444, #dc2626);
-  color: white;
-}
-
-.btn-resume {
-  background: linear-gradient(45deg, #3b82f6, #2563eb);
-  color: white;
-}
-
-.btn-reset {
+.rl-prev-btn {
   background: linear-gradient(45deg, #6b7280, #4b5563);
   color: white;
 }
 
-.btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+.rl-next-btn {
+  background: linear-gradient(45deg, #3b82f6, #2563eb);
+  color: white;
 }
 
-.btn:disabled {
-  opacity: 0.6;
+.rl-play-btn {
+  background: linear-gradient(45deg, #10b981, #059669);
+  color: white;
+}
+
+.rl-pause-btn {
+  background: linear-gradient(45deg, #ef4444, #dc2626);
+  color: white;
+}
+
+.rl-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.rl-btn:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+}
+
+.demo-info-panel {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  border-left: 5px solid #10b981;
+}
+
+.demo-info-panel h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #1f2937;
+  font-size: 1.3rem;
+}
+
+.demo-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.demo-feature {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 15px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.feature-icon {
+  font-size: 1.5rem;
+}
+
+.demo-instructions {
+  background: linear-gradient(45deg, #dbeafe, #bfdbfe);
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+}
+
+.demo-instructions p {
+  margin: 0;
+  color: #1e40af;
+  font-weight: 500;
+}
+
+/* Energy Flow Diagram Styles */
+.energy-flow-container {
+  width: 100%;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.config-controls {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.simulation-time-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.simulation-time-input input {
+  width: 80px;
+  padding: 8px 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.9rem;
 }
 
 .config-btn {
   background: linear-gradient(45deg, #8b5cf6, #7c3aed);
   color: white;
   border: none;
-  padding: 0.6rem 1.2rem;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.control-buttons {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.start-btn, .resume-btn {
+  background: linear-gradient(45deg, #10b981, #059669);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.pause-btn {
+  background: linear-gradient(45deg, #ef4444, #dc2626);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.reset-btn {
+  background: linear-gradient(45deg, #6b7280, #4b5563);
+  color: white;
+  border: none;
+  padding: 10px 20px;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
@@ -674,224 +1165,202 @@ export default {
 .speed-control {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .speed-control select {
-  padding: 0.5rem;
+  padding: 8px 12px;
   border: 2px solid #e2e8f0;
   border-radius: 6px;
   font-size: 0.9rem;
 }
 
-.time-display {
-  margin-top: 1rem;
-  padding: 1rem;
-  background: linear-gradient(45deg, #f8fafc, #e2e8f0);
-  border-radius: 8px;
-  border-left: 4px solid #3b82f6;
-}
-
-.time-info {
+.simulation-time-display {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 10px;
+  margin: 15px 0;
+  padding: 15px 20px;
+  background: linear-gradient(45deg, #f3f4f6, #e5e7eb);
+  border-radius: 10px;
+  font-weight: bold;
+  border-left: 5px solid #3b82f6;
 }
 
-.time-label {
-  font-weight: 600;
-  color: #4b5563;
+.time-icon {
+  font-size: 1.5rem;
 }
 
 .time-value {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.8rem;
   color: #1f2937;
 }
 
-.day-info {
-  background: #3b82f6;
-  color: white;
-  padding: 0.2rem 0.8rem;
+.time-day {
+  font-size: 14px;
+  color: #6b7280;
+  padding: 4px 12px;
+  background: #e5e7eb;
   border-radius: 15px;
-  font-size: 0.8rem;
-  font-weight: 600;
 }
 
-.energy-diagram-section {
-  margin-bottom: 2rem;
-}
-
-.energy-flow-container {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-
-.energy-flow-container h3 {
-  margin: 0 0 1rem 0;
-  color: #2d3748;
-  font-size: 1.3rem;
-}
-
-.diagram-placeholder {
+.diagram {
+  width: 100%;
+  height: 400px;
   background: #f8fafc;
   border-radius: 8px;
-  border: 2px dashed #e2e8f0;
+  overflow: hidden;
+  border: 2px solid #e2e8f0;
 }
 
-.energy-component {
+.device-icon {
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.component-bg {
-  fill: #f1f5f9;
-  stroke: #cbd5e1;
-  stroke-width: 2;
-  transition: all 0.3s ease;
+.device-icon.active {
+  filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.5));
 }
 
-.energy-component.active .component-bg {
-  fill: #dbeafe;
-  stroke: #3b82f6;
+.device-icon.solar.active {
+  filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.5));
 }
 
-.energy-component.solar.active .component-bg {
-  fill: #fef3c7;
-  stroke: #f59e0b;
+.device-icon.battery.active {
+  filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.5));
 }
 
-.energy-component.battery.active .component-bg {
-  fill: #d1fae5;
-  stroke: #10b981;
+.device-icon.grid.active {
+  filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.5));
 }
 
-.energy-component.grid.active .component-bg {
-  fill: #f3e8ff;
-  stroke: #8b5cf6;
+.device-label {
+  font-size: 14px;
+  font-weight: bold;
+  fill: #374151;
 }
 
-.component-label {
+.device-value {
   font-size: 12px;
-  font-weight: 600;
-  fill: #4b5563;
-}
-
-.component-value {
-  font-size: 11px;
-  font-weight: 700;
+  font-weight: bold;
   fill: #1f2937;
 }
 
 .flow-line {
-  stroke-dasharray: 5,5;
-  animation: flow 2s linear infinite;
+  stroke-dasharray: 10,5;
+  filter: drop-shadow(0 0 3px rgba(0,0,0,0.3));
 }
 
-@keyframes flow {
-  0% { stroke-dashoffset: 10; }
-  100% { stroke-dashoffset: 0; }
+.appliances {
+  margin-top: 20px;
 }
 
-.content-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  margin-bottom: 2rem;
+.appliance-group {
+  margin-bottom: 25px;
 }
 
-.appliances-section,
-.environmental-section {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-
-.appliances-section h3,
-.environmental-section h3 {
-  margin: 0 0 1rem 0;
-  color: #2d3748;
+.appliance-group h4 {
+  margin: 0 0 15px 0;
+  color: #374151;
   font-size: 1.1rem;
   font-weight: 600;
+  padding: 10px 15px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
 }
 
-.appliances-grid {
+.appliances-group {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
 }
 
 .appliance-card {
   background: #f8fafc;
-  border-radius: 8px;
-  padding: 1rem;
+  border-radius: 10px;
+  padding: 15px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
   border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.appliance-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.appliance-card.group-1::before {
+  background: #f43f5e;
+}
+
+.appliance-card.group-2::before {
+  background: #10b981;
+}
+
+.appliance-card.group-3::before {
+  background: #3b82f6;
 }
 
 .appliance-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-.appliance-card.group-1 {
-  border-left: 4px solid #f43f5e;
-}
-
-.appliance-card.group-2 {
-  border-left: 4px solid #10b981;
-}
-
-.appliance-card.group-3 {
-  border-left: 4px solid #3b82f6;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
 }
 
 .appliance-card.active {
   background: linear-gradient(135deg, #dbeafe, #bfdbfe);
   border-color: #3b82f6;
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
 }
 
 .appliance-card.group-1.active {
   background: linear-gradient(135deg, #fce7f3, #fbcfe8);
   border-color: #f43f5e;
+  box-shadow: 0 8px 25px rgba(244, 63, 94, 0.2);
 }
 
 .appliance-card.group-2.active {
   background: linear-gradient(135deg, #d1fae5, #a7f3d0);
   border-color: #10b981;
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.2);
 }
 
 .appliance-icon {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
+  font-size: 2.5rem;
+  margin-bottom: 8px;
+  display: block;
 }
 
 .appliance-name {
   font-weight: 600;
   color: #2d3748;
-  margin-bottom: 0.3rem;
-  font-size: 0.9rem;
+  margin-bottom: 5px;
+  font-size: 0.95rem;
 }
 
 .appliance-power {
   color: #6b7280;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 500;
-  margin-bottom: 0.3rem;
+  margin-bottom: 8px;
 }
 
 .appliance-status {
-  font-size: 0.7rem;
-  padding: 0.2rem 0.6rem;
-  border-radius: 12px;
+  font-size: 0.75rem;
+  padding: 4px 12px;
+  border-radius: 15px;
   font-weight: 600;
   text-transform: uppercase;
+  display: inline-block;
 }
 
 .appliance-status.on {
@@ -904,154 +1373,131 @@ export default {
   color: #991b1b;
 }
 
-.chart-container {
-  margin-bottom: 1.5rem;
-  position: relative;
-}
-
-.chart-container h4 {
-  margin: 0 0 0.8rem 0;
-  color: #374151;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.chart-placeholder {
-  background: #f8fafc;
-  border-radius: 6px;
-  border: 1px solid #e5e7eb;
-  height: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #9ca3af;
-  font-style: italic;
-}
-
-.chart-placeholder canvas {
-  width: 100% !important;
-  height: 100% !important;
-}
-
-.current-value {
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  background: rgba(255, 255, 255, 0.9);
-  padding: 0.3rem 0.6rem;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #374151;
-  border: 1px solid #e5e7eb;
-}
-
 .energy-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
+  gap: 15px;
+  margin-top: 25px;
 }
 
 .stat-card {
-  background: white;
+  padding: 20px;
   border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  border-left: 4px solid;
-  transition: transform 0.3s ease;
+  border-left: 5px solid;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0.1;
+  background: linear-gradient(135deg, transparent 0%, currentColor 100%);
+  pointer-events: none;
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
 }
 
 .stat-card.solar {
   border-left-color: #f59e0b;
   background: linear-gradient(135deg, #fffbeb, #fef3c7);
+  color: #f59e0b;
 }
 
 .stat-card.battery {
   border-left-color: #10b981;
   background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  color: #10b981;
 }
 
 .stat-card.grid {
   border-left-color: #8b5cf6;
   background: linear-gradient(135deg, #f5f3ff, #e7d3ff);
+  color: #8b5cf6;
 }
 
 .stat-card.home {
   border-left-color: #3b82f6;
   background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  color: #3b82f6;
 }
 
 .stat-title {
   font-size: 0.9rem;
   font-weight: 500;
   color: #6b7280;
-  margin-bottom: 0.5rem;
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 1;
 }
 
 .stat-value {
-  font-size: 1.8rem;
+  font-size: 2rem;
   font-weight: 700;
   color: #1f2937;
+  position: relative;
+  z-index: 1;
 }
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-  .content-grid {
+  .controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .rl-simulation-info {
+    flex-direction: column;
+  }
+  
+  .demo-features {
     grid-template-columns: 1fr;
-  }
-  
-  .simulation-controls {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-  
-  .time-info {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
   }
 }
 
 @media (max-width: 768px) {
-  .main-content {
-    padding: 1rem;
+  .container {
+    padding: 10px;
   }
   
-  .app-header {
-    padding: 1rem;
+  header {
     flex-direction: column;
-    gap: 1rem;
+    gap: 15px;
+    text-align: center;
   }
   
-  .app-header h1 {
-    font-size: 1.5rem;
+  header h1 {
+    font-size: 1.8rem;
   }
   
-  .appliances-grid {
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  }
-  
-  .energy-stats {
+  .appliances-group {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   }
   
-  .simulation-buttons {
-    flex-wrap: wrap;
+  .energy-stats {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   }
   
-  .btn {
-    font-size: 0.8rem;
-    padding: 0.5rem 1rem;
+  .rl-step-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .rl-btn {
+    width: 100%;
   }
 }
 
 @media (max-width: 480px) {
-  .appliances-grid {
+  .appliances-group {
     grid-template-columns: 1fr 1fr;
   }
   
@@ -1059,81 +1505,7 @@ export default {
     grid-template-columns: 1fr;
   }
   
-  .stat-card {
-    padding: 1rem;
-  }
-  
   .stat-value {
-    font-size: 1.4rem;
-  }
-}
-
-/* Animation for active components */
-.energy-component.active {
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.7; }
-  100% { opacity: 1; }
-}
-
-/* Loading states */
-.btn:disabled {
-  background: #e5e7eb !important;
-  color: #9ca3af !important;
-  cursor: not-allowed;
-}
-
-.config-btn:disabled {
-  background: #e5e7eb !important;
-  color: #9ca3af !important;
-}
-
-/* Focus states for accessibility */
-.btn:focus,
-.config-btn:focus,
-.appliance-card:focus {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
-}
-
-/* Print styles */
-@media print {
-  .control-panel,
-  .simulation-buttons {
-    display: none;
-  }
-  
-  .energy-stats {
-    break-inside: avoid;
-  }
-}
-
-/* Dark mode support (if needed later) */
-@media (prefers-color-scheme: dark) {
-  .app-container {
-    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-    color: #f9fafb;
-  }
-  
-  .app-header,
-  .control-panel,
-  .energy-flow-container,
-  .appliances-section,
-  .environmental-section,
-  .stat-card {
-    background: #374151;
-    color: #f9fafb;
-  }
-  
-  .appliance-card {
-    background: #4b5563;
-  }
-  
-  .chart-placeholder {
-    background: #4b5563;
-    border-color: #6b7280;
+    font-size: 1.5rem;
   }
 }
