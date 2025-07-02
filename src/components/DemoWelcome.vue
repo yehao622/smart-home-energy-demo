@@ -2,250 +2,302 @@
 // components/DemoWelcome.vue
 
 <template>
-  <div class="demo-welcome-overlay" v-if="showWelcome">
-    <div class="welcome-modal">
-      <div class="welcome-header">
-        <h2>🏠 Smart Home Energy Management System</h2>
-        <p>AI-Powered Energy Optimization Demo</p>
-      </div>
-      
-      <div class="welcome-content">
-        <div class="feature-highlights">
-          <div class="feature">
-            <span class="icon">🤖</span>
-            <h4>AI Optimization</h4>
-            <p>Machine learning algorithms optimize energy usage in real-time</p>
-          </div>
-          
-          <div class="feature">
-            <span class="icon">💰</span>
-            <h4>Cost Savings</h4>
-            <p>30-40% reduction in electricity bills through smart scheduling</p>
-          </div>
-          
-          <div class="feature">
-            <span class="icon">🌱</span>
-            <h4>Renewable Integration</h4>
-            <p>Maximizes solar energy utilization and reduces grid dependency</p>
-          </div>
-        </div>
-        
-        <div class="demo-scenarios">
-          <h3>Try These Scenarios:</h3>
-          <div class="scenarios">
-            <button @click="startScenario('peak')" class="scenario-btn peak">
-              ⚡ Peak Hour Management
-            </button>
-            <button @click="startScenario('solar')" class="scenario-btn solar">
-              ☀️ Solar Optimization
-            </button>
-            <button @click="startScenario('night')" class="scenario-btn night">
-              🌙 Night Charging
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <div class="welcome-actions">
-        <button @click="startDemo" class="start-demo-btn">
-          🚀 Start AI Demo
-        </button>
-        <button @click="closeWelcome" class="skip-btn">
-          Skip Introduction
-        </button>
-      </div>
-      
-      <div class="technical-note">
-        <p><strong>Technical Note:</strong> This demo showcases a Vue.js frontend with AI-powered backend simulation. 
-        The full system includes Python RL algorithms, Node.js microservices, and real-time data processing.</p>
+  <div class="container">
+    <!-- Demo Banner -->
+    <div class="demo-banner">
+      🎭 DEMO MODE - Smart Home Energy Simulator
+      <span class="demo-subtitle">AI-powered energy management system demonstration</span>
+    </div>
+
+    <header>
+      <h1>Smart Home Energy Simulator</h1>
+    </header>
+
+    <div class="main-layout">
+      <!-- Energy Flow Diagram -->
+      <div class="diagram-section">
+        <energy-flow-diagram
+           :solar-output="solarOutput"
+           :battery-level="batteryLevel"
+           :battery-status="batteryStatus"
+           :battery-power="batteryPower"
+           :grid-power="gridPower"
+           :house-demand="houseDemand"
+           :appliances="appliances"
+           :is-running="simulationRunning"
+           :simulation-state="simulationState"
+           :simulation-elapsed-minutes="simulationElapsedMinutes"
+           :simulation-formatted-time="simulationFormattedTime"
+           :simulation-day="simulationDay"
+           :simulation-completed="simulationCompleted"
+           @start-simulation="startSimulation"
+           @pause-simulation="pauseSimulation"
+           @resume-simulation="resumeSimulation"
+           @reset-simulation="resetSimulation"
+           @toggle-appliance="toggleAppliance"
+           @demand-updated="updateHouseDemand"
+           @grid-power-updated="updateGridPower"
+           @speed-changed="handleSpeedChange"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import EnergyFlowDiagram from './EnergyFlowDiagram.vue';
+import { createMockSocket } from '../services/mockSocket.js';
+
 export default {
+  components: {
+    EnergyFlowDiagram
+  },
+
   name: 'DemoWelcome',
   data() {
     return {
-      showWelcome: true
+      // Simulation state
+      simulationRunning: false,
+      simulationState: 'idle',
+      simulationElapsedMinutes: 0,
+      simulationFormattedTime: "00:00",
+      simulationDay: 1,
+      simulationCompleted: false,
+      
+      // Energy data
+      solarOutput: 0,
+      batteryLevel: 45,
+      batteryStatus: 'empty',
+      batteryPower: 0,
+      gridPower: 0,
+      houseDemand: 0,
+      
+      // Appliances
+      appliances: [
+        { id: 1, name: 'Dishwasher', type: 'dishwasher', power: 1.8, active: false, group: 1 },
+        { id: 2, name: 'Wash Machine', type: 'wash_machine', power: 0.4, active: false, group: 1 },
+        { id: 3, name: 'Clothes Dryer', type: 'clothes_dryer', power: 1.2, active: false, group: 1 },
+        { id: 4, name: 'HVAC', type: 'hvac', power: 2.5, active: false, group: 2 },
+        { id: 5, name: 'Water Heater', type: 'water_heater', power: 4.5, active: false, group: 2 },
+        { id: 6, name: 'EV Charger', type: 'ev_charger', power: 6.0, active: false, group: 2 },
+        { id: 7, name: 'TV', type: 'tv', power: 0.1, active: false, group: 3 },
+        { id: 8, name: 'Refrigerator', type: 'refrigerator', power: 0.2, active: true, group: 3 },
+        { id: 9, name: 'Lights', type: 'lights', power: 0.2, active: false, group: 3 },
+        { id: 10, name: 'Vacuum Cleaner', type: 'vacuum', power: 1.2, active: false, group: 3 },
+        { id: 11, name: 'Hair Dryer', type: 'hair_dryer', power: 1.0, active: false, group: 3 }
+      ]
     };
   },
+
+  mounted() {
+    // Set up mock socket connection for demo
+    this.socket = createMockSocket();
+    
+    this.setupSocketHandlers();
+    
+    // Get initial state
+    this.socket.emit('get_current_state');
+  },
+
   methods: {
-    startDemo() {
-      this.$emit('start-demo', { scenario: 'auto' });
-      this.closeWelcome();
+    setupSocketHandlers() {
+      this.socket.on('connect', () => {
+        console.log("Demo socket connected!");
+      });
+
+      this.socket.on('simulation_update', (data) => {
+        this.solarOutput = data.solarOutput || 0;
+        this.batteryLevel = data.batteryLevel || 45;
+        this.batteryStatus = data.batteryStatus || 'empty';
+        this.batteryPower = data.batteryPower || 0;
+        this.gridPower = data.gridDraw || 0;
+        this.houseDemand = data.houseDemand || 0;
+        this.simulationElapsedMinutes = data.elapsedMinutes || 0;
+        this.simulationFormattedTime = data.formattedTime || "00:00";
+        this.simulationDay = data.simulationDay || 1;
+
+        if (data.devices && data.devices.length > 0) {
+          this.appliances = this.appliances.map(app => {
+            const device = data.devices.find(d => d.type === app.type);
+            if (device) {
+              return {
+                ...app,
+                active: device.active,
+                power: device.power
+              };
+            }
+            return app;
+          });
+        }
+      });
+
+      this.socket.on('simulation_status', (status) => {
+        this.simulationRunning = status.running;
+        if (status.mode) {
+          this.simulationState = status.mode;
+        }
+      });
+
+      this.socket.on('simulation_reset', (data) => {
+        this.simulationRunning = false;
+        this.simulationState = 'idle';
+        this.solarOutput = data.solarOutput || 0;
+        this.batteryLevel = data.batteryLevel || 45;
+        this.batteryStatus = data.batteryStatus || 'empty';
+        this.batteryPower = 0;
+        this.gridPower = data.gridDraw || 0;
+        this.houseDemand = data.houseDemand || 0;
+        this.simulationElapsedMinutes = 0;
+        this.simulationFormattedTime = "00:00";
+        this.simulationDay = 1;
+        
+        this.appliances = this.appliances.map(app => ({
+          ...app,
+          active: app.type === 'refrigerator'
+        }));
+      });
+    },
+
+    startSimulation() {
+      this.simulationRunning = true;
+      this.simulationState = 'manual';
+      this.socket.emit('start_simulation', {
+        initialState: {
+          simulationMode: 'manual',
+          devices: this.appliances
+        },
+        interval: 1000
+      });
     },
     
-    startScenario(scenario) {
-      this.$emit('start-demo', { scenario });
-      this.closeWelcome();
+    pauseSimulation() {
+      this.socket.emit('stop_simulation');
     },
     
-    closeWelcome() {
-      this.showWelcome = false;
+    resumeSimulation() {
+      this.socket.emit('start_simulation', {
+        initialState: {
+          simulationMode: 'manual',
+          preserveTime: true,
+          elapsedMinutes: this.simulationElapsedMinutes
+        },
+        interval: 1000
+      });
+    },
+    
+    resetSimulation() {
+      this.socket.emit('reset_simulation');
+    },
+    
+    toggleAppliance(applianceId) {
+      const appIndex = this.appliances.findIndex(app => app.id === applianceId);
+      
+      if (appIndex !== -1) {
+        this.appliances[appIndex].active = !this.appliances[appIndex].active;
+        
+        const newHouseDemand = this.appliances
+          .filter(app => app.active)
+          .reduce((sum, app) => sum + app.power, 0);
+        
+        this.houseDemand = parseFloat(newHouseDemand.toFixed(1));
+        
+        this.socket.emit('update_devices', {
+          devices: this.appliances.map(app => ({
+            id: app.id,
+            name: app.name,
+            type: app.type,
+            power: app.power,
+            active: app.active
+          }))
+        });
+      }
+    },
+
+    updateHouseDemand(newDemand) {
+      this.houseDemand = newDemand;
+    },
+
+    updateGridPower(newPower) {
+      this.gridPower = newPower;
+    },
+
+    handleSpeedChange(speedData) {
+      console.log('Speed changed:', speedData);
+    }
+  },
+  
+  beforeUnmount() {
+    if (this.socket) {
+      this.socket.removeAllListeners();
+      this.socket.disconnect();
     }
   }
 };
 </script>
 
 <style scoped>
-.demo-welcome-overlay {
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.demo-banner {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  background: linear-gradient(90deg, #4f46e5, #7c3aed);
+  color: white;
+  padding: 12px 20px;
+  text-align: center;
+  font-weight: bold;
   z-index: 1000;
-  backdrop-filter: blur(5px);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
-.welcome-modal {
-  background: white;
-  border-radius: 16px;
-  padding: 30px;
-  max-width: 600px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-}
-
-.welcome-header {
-  text-align: center;
-  margin-bottom: 25px;
-}
-
-.welcome-header h2 {
-  margin: 0 0 10px 0;
-  color: #1f2937;
-  font-size: 24px;
-}
-
-.welcome-header p {
-  color: #6b7280;
-  margin: 0;
-  font-size: 16px;
-}
-
-.feature-highlights {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 20px;
-  margin-bottom: 25px;
-}
-
-.feature {
-  text-align: center;
-  padding: 15px;
-  border-radius: 8px;
-  background: #f8fafc;
-}
-
-.feature .icon {
-  font-size: 32px;
-  display: block;
-  margin-bottom: 10px;
-}
-
-.feature h4 {
-  margin: 0 0 8px 0;
-  color: #1f2937;
-}
-
-.feature p {
-  margin: 0;
-  color: #6b7280;
+.demo-subtitle {
+  opacity: 0.9;
+  margin-left: 20px;
+  font-weight: normal;
   font-size: 14px;
 }
 
-.demo-scenarios {
-  margin-bottom: 25px;
-}
-
-.demo-scenarios h3 {
-  text-align: center;
-  margin-bottom: 15px;
-  color: #1f2937;
-}
-
-.scenarios {
+header {
   display: flex;
-  gap: 10px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.scenario-btn {
-  padding: 10px 16px;
-  border: none;
+  justify-content: space-between;
+  align-items: center;
+  margin: 60px 0 20px 0; /* Account for demo banner */
+  padding: 10px;
+  background-color: #f0f0f0;
   border-radius: 8px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: transform 0.2s;
 }
 
-.scenario-btn:hover {
-  transform: translateY(-2px);
-}
-
-.scenario-btn.peak {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.scenario-btn.solar {
-  background: #ecfdf5;
-  color: #047857;
-}
-
-.scenario-btn.night {
-  background: #ede9fe;
-  color: #6366f1;
-}
-
-.welcome-actions {
+.main-layout {
   display: flex;
-  gap: 15px;
-  justify-content: center;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 20px;
   margin-bottom: 20px;
 }
 
-.start-demo-btn {
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  font-size: 16px;
+.diagram-section {
+  flex: 1;
+  min-width: 800px;
 }
 
-.skip-btn {
-  padding: 12px 24px;
-  background: #f3f4f6;
-  color: #6b7280;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.technical-note {
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
-  border-radius: 8px;
-  padding: 15px;
-  text-align: center;
-}
-
-.technical-note p {
-  margin: 0;
-  font-size: 14px;
-  color: #0369a1;
-}
+@media (max-width: 1024px) {
+  .main-layout {
+    flex-direction: column;
+  }
+  
+  .diagram-section {
+    min-width: 100%;
+  }
+  
+  .demo-banner {
+    font-size: 14px;
+    padding: 8px 15px;
+  }
 </style>
