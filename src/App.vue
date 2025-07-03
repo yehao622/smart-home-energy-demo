@@ -8,44 +8,44 @@
     </header>
 
     <div class="main-layout">
-      <!-- Energy Flow Diagram -->
       <div class="diagram-section">
+        <!-- Use the actual component instead of mock -->
         <energy-flow-diagram
-           :solar-output="solarOutput"
-           :battery-level="batteryLevel"
-           :battery-status="batteryStatus"
-           :battery-power="batteryPower"
-           :grid-power="gridPower"
-           :house-demand="houseDemand"
-           :appliances="appliances"
-           :is-running="simulationRunning"
-           :simulation-state="simulationState"
-           :rl-prediction="rlPrediction"
-           :simulation-elapsed-minutes="simulationElapsedMinutes"
-           :simulation-formatted-time="simulationFormattedTime"
-           :simulation-day="simulationDay"
-           :home-temperature-history="homeTemperatureHistory"
-           :water-temperature-history="waterTemperatureHistory"
-           :appliance-power-history="appliancePowerHistory"
-           :simulation-completed="simulationCompleted"
-           @start-simulation="startSimulation"
-           @pause-simulation="pauseSimulation"
-           @resume-simulation="resumeSimulation"
-           @reset-simulation="resetSimulation"
-           @toggle-appliance="toggleAppliance"
-           @demand-updated="updateHouseDemand"
-           @grid-power-updated="updateGridPower"
-           @config-updated="handleConfigUpdated"
-           @speed-changed="handleSpeedChange"
-           @battery-critical="handleBatteryCritical"
-           @history-updated="onHistoryUpdated"
-           @hourly-data-update="handleHourlyDataUpdate"
-           @simulation-complete="handleSimulationComplete"
-           @energy-models-updated="handleEnergyModelsUpdate"
-           @solar-output-updated="solarOutput = $event"
-           @battery-level-updated="batteryLevel = $event"
-           @battery-status-updated="batteryStatus = $event"
-           @update-appliance-power="handleAppliancePowerUpdate"
+          :solar-output="solarOutput"
+          :battery-level="batteryLevel"
+          :battery-status="batteryStatus"
+          :battery-power="batteryPower"
+          :grid-power="gridPower"
+          :house-demand="houseDemand"
+          :appliances="appliances"
+          :is-running="simulationRunning"
+          :simulation-state="simulationState"
+          :rl-prediction="rlPrediction"
+          :simulation-elapsed-minutes="simulationElapsedMinutes"
+          :simulation-formatted-time="simulationFormattedTime"
+          :simulation-day="simulationDay"
+          :home-temperature-history="homeTemperatureHistory"
+          :water-temperature-history="waterTemperatureHistory"
+          :appliance-power-history="appliancePowerHistory"
+          :simulation-completed="simulationCompleted"
+          @start-simulation="startSimulation"
+          @pause-simulation="pauseSimulation"
+          @resume-simulation="resumeSimulation"
+          @reset-simulation="resetSimulation"
+          @toggle-appliance="toggleAppliance"
+          @demand-updated="updateHouseDemand"
+          @grid-power-updated="updateGridPower"
+          @config-updated="handleConfigUpdated"
+          @speed-changed="handleSpeedChange"
+          @battery-critical="handleBatteryCritical"
+          @history-updated="onHistoryUpdated"
+          @hourly-data-update="handleHourlyDataUpdate"
+          @simulation-complete="handleSimulationComplete"
+          @energy-models-updated="handleEnergyModelsUpdate"
+          @solar-output-updated="solarOutput = $event"
+          @battery-level-updated="batteryLevel = $event"
+          @battery-status-updated="batteryStatus = $event"
+          @update-appliance-power="handleAppliancePowerUpdate"
         />
       </div>
     </div>
@@ -116,323 +116,8 @@
 
 <script>
 // Import the main component that contains all the logic
-// For demo mode, we'll create a mock version if the original isn't available
-let EnergyFlowDiagram;
 
-try {
-  // Try to import the real component
-  EnergyFlowDiagram = () => import('./components/EnergyFlowDiagram.vue');
-} catch (error) {
-  // Fallback for demo mode - create a mock component
-  EnergyFlowDiagram = {
-    template: `
-      <div class="energy-flow-container">
-        <div class="controls">   
-          <div class="config-controls">
-            <div class="simulation-time-input">
-              <label for="simulation-hours">Simulation hours:</label>
-              <input 
-                id="simulation-hours" 
-                type="number" 
-                v-model.number="simulationHours" 
-                min="0.1" 
-                step="0.1"
-                placeholder="Hours"
-              />
-              <span>hours</span>
-            </div>
-
-            <button @click="loadConfigFile" class="config-btn">
-              📁 Load Configuration
-            </button>
-          </div>
-          
-          <div class="control-buttons">
-            <button 
-              v-if="simulationState === 'idle'"
-              @click="startSimulation"
-              class="start-btn"
-            >
-              ▶️ Start
-            </button>
-
-            <button 
-              v-if="isRunning && simulationState !== 'idle'"
-              @click="pauseSimulation"
-              class="pause-btn"
-            >
-              ⏸️ Pause
-            </button>
-
-            <button 
-              v-if="!isRunning && simulationState !== 'idle' && !simulationCompleted"
-              @click="resumeSimulation"
-              class="resume-btn"
-            >
-              ▶️ Resume
-            </button>
-
-            <button 
-              v-if="simulationState !== 'idle'"
-              @click="resetSimulation"
-              class="reset-btn"
-            >
-              🔄 Reset
-            </button>
-            
-            <div class="speed-control">
-              <span>⚡ Animation speed:</span>
-              <select v-model="selectedSpeed" @change="onSpeedChange">
-                <option value="1">🐌 Slow</option>
-                <option value="2">🚶 Medium</option>
-                <option value="3">🏃 Fast</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div class="simulation-time-display" v-if="isRunning || simulationState !== 'idle'">
-          <div class="time-icon">🕒</div>
-          <div class="time-value">{{ formattedSimulationTime }}</div>
-          <div class="time-day" v-if="localSimulationDay > 1">Day {{ localSimulationDay }}</div>
-        </div>
-        
-        <div class="diagram">
-          <svg width="100%" height="400" viewBox="0 0 1000 400">
-            <!-- Background Grid -->
-            <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
-              <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#eee" stroke-width="1" />
-            </pattern>
-            <rect width="100%" height="100%" fill="url(#grid)" />
-            
-            <!-- Solar Panel -->
-            <g class="device-icon solar" :class="{ active: solarOutput > 0 }">
-              <rect x="50" y="50" width="100" height="80" rx="10" fill="#fff9e6" stroke="#f59e0b" stroke-width="3"/>
-              <text x="100" y="75" text-anchor="middle" class="device-label">☀️ Solar</text>
-              <text x="100" y="95" text-anchor="middle" class="device-value">{{ solarOutput }} kW</text>
-            </g>
-
-            <!-- Battery -->
-            <g class="device-icon battery" :class="{ active: batteryLevel > 10 }">
-              <rect x="300" y="100" width="100" height="80" rx="10" fill="#f0fdf4" stroke="#10b981" stroke-width="3"/>
-              <text x="350" y="125" text-anchor="middle" class="device-label">🔋 Battery</text>
-              <text x="350" y="145" text-anchor="middle" class="device-value">{{ batteryLevel }}%</text>
-            </g>
-
-            <!-- Grid -->
-            <g class="device-icon grid" :class="{ active: Math.abs(gridPower) > 0 }">
-              <rect x="650" y="50" width="100" height="80" rx="10" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="3"/>
-              <text x="700" y="75" text-anchor="middle" class="device-label">⚡ Grid</text>
-              <text x="700" y="95" text-anchor="middle" class="device-value">{{ gridPower }} kW</text>
-            </g>
-
-            <!-- House -->
-            <g class="device-icon house">
-              <rect x="425" y="250" width="150" height="100" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="3"/>
-              <text x="500" y="285" text-anchor="middle" class="device-label">🏠 Home</text>
-              <text x="500" y="305" text-anchor="middle" class="device-value">{{ houseDemand }} kW</text>
-            </g>
-            
-            <!-- Energy Flow Lines with Animation -->
-            <g v-if="isRunning">
-              <!-- Solar to House -->
-              <line v-if="solarOutput > 0" x1="150" y1="90" x2="450" y2="280" 
-                    stroke="#f59e0b" stroke-width="4" class="flow-line">
-                <animate attributeName="stroke-dasharray" values="0,20;20,0" dur="2s" repeatCount="indefinite"/>
-              </line>
-              
-              <!-- Battery to House -->
-              <line v-if="batteryLevel > 20 && batteryPower < 0" x1="400" y1="140" x2="470" y2="250" 
-                    stroke="#10b981" stroke-width="3" class="flow-line">
-                <animate attributeName="stroke-dasharray" values="0,15;15,0" dur="1.5s" repeatCount="indefinite"/>
-              </line>
-              
-              <!-- Grid to House -->
-              <line v-if="gridPower > 0" x1="650" y1="90" x2="550" y2="250" 
-                    stroke="#8b5cf6" stroke-width="3" class="flow-line">
-                <animate attributeName="stroke-dasharray" values="0,15;15,0" dur="1.8s" repeatCount="indefinite"/>
-              </line>
-
-              <!-- Solar to Battery -->
-              <line v-if="solarOutput > houseDemand && batteryLevel < 100" x1="150" y1="100" x2="300" y2="130" 
-                    stroke="#f59e0b" stroke-width="2" class="flow-line">
-                <animate attributeName="stroke-dasharray" values="0,10;10,0" dur="1.2s" repeatCount="indefinite"/>
-              </line>
-            </g>
-          </svg>
-        </div>
-        
-        <!-- Appliances Section -->
-        <div class="appliances">
-          <div class="appliance-group">
-            <h4>🔧 Fixed Power Appliances (Run Full Duration)</h4>
-            <div class="appliances-group">
-              <div 
-                v-for="app in appliancesGroup1" 
-                :key="app.id"
-                class="appliance-card group-1"
-                :class="{ active: app.active }"
-                @click="toggleAppliance(app.id)"
-              >
-                <div class="appliance-icon">{{ getApplianceIcon(app.type) }}</div>
-                <div class="appliance-name">{{ app.name }}</div>
-                <div class="appliance-power">{{ app.power }} kW</div>
-                <div class="appliance-status" :class="app.active ? 'on' : 'off'">
-                  {{ app.active ? 'ON' : 'OFF' }}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="appliance-group">
-            <h4>⚙️ Variable Power Appliances</h4>
-            <div class="appliances-group">
-              <div 
-                v-for="app in appliancesGroup2" 
-                :key="app.id"
-                class="appliance-card group-2"
-                :class="{ active: app.active }"
-                @click="toggleAppliance(app.id)"
-              >
-                <div class="appliance-icon">{{ getApplianceIcon(app.type) }}</div>
-                <div class="appliance-name">{{ app.name }}</div>
-                <div class="appliance-power">{{ app.power }} kW</div>
-                <div class="appliance-status" :class="app.active ? 'on' : 'off'">
-                  {{ app.active ? 'ON' : 'OFF' }}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="appliance-group">
-            <h4>🎛️ Fixed Power Appliances (Toggle Anytime)</h4>
-            <div class="appliances-group">
-              <div 
-                v-for="app in appliancesGroup3" 
-                :key="app.id"
-                class="appliance-card group-3"
-                :class="{ active: app.active }"
-                @click="toggleAppliance(app.id)"
-              >
-                <div class="appliance-icon">{{ getApplianceIcon(app.type) }}</div>
-                <div class="appliance-name">{{ app.name }}</div>
-                <div class="appliance-power">{{ app.power }} kW</div>
-                <div class="appliance-status" :class="app.active ? 'on' : 'off'">
-                  {{ app.active ? 'ON' : 'OFF' }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Energy Stats -->
-        <div class="energy-stats">
-          <div class="stat-card solar">
-            <div class="stat-title">☀️ Solar Production</div>
-            <div class="stat-value">{{ solarOutput }} kW</div>
-          </div>
-          <div class="stat-card battery">
-            <div class="stat-title">🔋 Battery Level</div>
-            <div class="stat-value">{{ batteryLevel }}%</div>
-          </div>
-          <div class="stat-card grid">
-            <div class="stat-title">⚡ Grid Usage</div>
-            <div class="stat-value">{{ gridPower }} kW</div>
-          </div>
-          <div class="stat-card home">
-            <div class="stat-title">🏠 Home Demand</div>
-            <div class="stat-value">{{ houseDemand }} kW</div>
-          </div>
-        </div>
-      </div>
-    `,
-    props: {
-      solarOutput: { type: Number, default: 0 },
-      batteryLevel: { type: Number, default: 35 },
-      batteryStatus: { type: String, default: 'empty' },
-      batteryPower: { type: Number, default: 0 },
-      gridPower: { type: Number, default: 0 },
-      houseDemand: { type: Number, default: 0 },
-      appliances: { type: Array, default: () => [] },
-      isRunning: { type: Boolean, default: false },
-      simulationState: { type: String, default: 'idle' },
-      rlPrediction: { type: Object, default: null },
-      simulationElapsedMinutes: { type: Number, default: 0 },
-      simulationFormattedTime: { type: String, default: "00:00" },
-      simulationDay: { type: Number, default: 1 },
-      homeTemperatureHistory: { type: Array, default: () => [] },
-      waterTemperatureHistory: { type: Array, default: () => [] },
-      appliancePowerHistory: { type: Object, default: () => ({}) },
-      simulationCompleted: { type: Boolean, default: false }
-    },
-    data() {
-      return {
-        simulationHours: 1,
-        selectedSpeed: 2,
-        localSimulationDay: 1,
-        formattedSimulationTime: "00:00"
-      };
-    },
-    computed: {
-      appliancesGroup1() {
-        return this.appliances.filter(a => a.group === 1);
-      },
-      appliancesGroup2() {
-        return this.appliances.filter(a => a.group === 2);
-      },
-      appliancesGroup3() {
-        return this.appliances.filter(a => a.group === 3);
-      }
-    },
-    methods: {
-      getApplianceIcon(type) {
-        const icons = {
-          dishwasher: '🍽️',
-          wash_machine: '👕',
-          clothes_dryer: '🌀',
-          hvac: '❄️',
-          water_heater: '🚿',
-          ev_charger: '🔌',
-          tv: '📺',
-          refrigerator: '🧊',
-          lights: '💡',
-          vacuum: '🧹',
-          hair_dryer: '💨'
-        };
-        return icons[type] || '⚡';
-      },
-      toggleAppliance(id) {
-        this.$emit('toggle-appliance', id);
-      },
-      startSimulation() {
-        this.$emit('start-simulation');
-      },
-      pauseSimulation() {
-        this.$emit('pause-simulation');
-      },
-      resumeSimulation() {
-        this.$emit('resume-simulation');
-      },
-      resetSimulation() {
-        this.$emit('reset-simulation');
-      },
-      loadConfigFile() {
-        console.log('Load config in demo mode');
-      },
-      onSpeedChange() {
-        this.$emit('speed-changed', { animationSpeed: this.selectedSpeed });
-      }
-    },
-    watch: {
-      simulationFormattedTime(newVal) {
-        this.formattedSimulationTime = newVal;
-      },
-      simulationDay(newVal) {
-        this.localSimulationDay = newVal;
-      }
-    }
-  };
-}
+import EnergyFlowDiagram from './components/EnergyFlowDiagram.vue';
 
 export default {
   components: {
