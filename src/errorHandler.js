@@ -23,11 +23,22 @@ export function setupErrorHandling() {
 
   // Global error handler
   window.addEventListener('error', (event) => {
-    console.error('Global error:', event.error);
+    console.warn('Demo Mode - Error caught:', event.error?.message || event.message);
+    event.preventDefault(); // Prevent error from breaking the demo
   });
 
   // Unhandled promise rejection handler
   window.addEventListener('unhandledrejection', (event) => {
-    console.error('Unhandled promise rejection:', event.reason);
+    console.warn('Demo Mode - Promise rejection caught:', event.reason);
+    event.preventDefault(); // Prevent unhandled rejection from breaking the demo
   });
+
+  // Handle Vue component errors (if using Vue 3's global error handler)
+  if (window.Vue && window.Vue.config) {
+    window.Vue.config.errorHandler = (err, vm, info) => {
+      console.warn('Demo Mode - Vue error caught:', err.message, info);
+    };
+  }
+
+  console.log('✅ Demo Mode: Error handling initialized');
 }
