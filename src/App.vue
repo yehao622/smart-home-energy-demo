@@ -8,44 +8,44 @@
     </header>
 
     <div class="main-layout">
+      <!-- Energy Flow Diagram -->
       <div class="diagram-section">
-        <!-- Use the actual component instead of mock -->
         <energy-flow-diagram
-          :solar-output="solarOutput"
-          :battery-level="batteryLevel"
-          :battery-status="batteryStatus"
-          :battery-power="batteryPower"
-          :grid-power="gridPower"
-          :house-demand="houseDemand"
-          :appliances="appliances"
-          :is-running="simulationRunning"
-          :simulation-state="simulationState"
-          :rl-prediction="rlPrediction"
-          :simulation-elapsed-minutes="simulationElapsedMinutes"
-          :simulation-formatted-time="simulationFormattedTime"
-          :simulation-day="simulationDay"
-          :home-temperature-history="homeTemperatureHistory"
-          :water-temperature-history="waterTemperatureHistory"
-          :appliance-power-history="appliancePowerHistory"
-          :simulation-completed="simulationCompleted"
-          @start-simulation="startSimulation"
-          @pause-simulation="pauseSimulation"
-          @resume-simulation="resumeSimulation"
-          @reset-simulation="resetSimulation"
-          @toggle-appliance="toggleAppliance"
-          @demand-updated="updateHouseDemand"
-          @grid-power-updated="updateGridPower"
-          @config-updated="handleConfigUpdated"
-          @speed-changed="handleSpeedChange"
-          @battery-critical="handleBatteryCritical"
-          @history-updated="onHistoryUpdated"
-          @hourly-data-update="handleHourlyDataUpdate"
-          @simulation-complete="handleSimulationComplete"
-          @energy-models-updated="handleEnergyModelsUpdate"
-          @solar-output-updated="solarOutput = $event"
-          @battery-level-updated="batteryLevel = $event"
-          @battery-status-updated="batteryStatus = $event"
-          @update-appliance-power="handleAppliancePowerUpdate"
+           :solar-output="solarOutput"
+           :battery-level="batteryLevel"
+           :battery-status="batteryStatus"
+           :battery-power="batteryPower"
+           :grid-power="gridPower"
+           :house-demand="houseDemand"
+           :appliances="appliances"
+           :is-running="simulationRunning"
+           :simulation-state="simulationState"
+           :rl-prediction="rlPrediction"
+           :simulation-elapsed-minutes="simulationElapsedMinutes"
+           :simulation-formatted-time="simulationFormattedTime"
+           :simulation-day="simulationDay"
+           :home-temperature-history="homeTemperatureHistory"
+           :water-temperature-history="waterTemperatureHistory"
+           :appliance-power-history="appliancePowerHistory"
+           :simulation-completed="simulationCompleted"
+           @start-simulation="startSimulation"
+           @pause-simulation="pauseSimulation"
+           @resume-simulation="resumeSimulation"
+           @reset-simulation="resetSimulation"
+           @toggle-appliance="toggleAppliance"
+           @demand-updated="updateHouseDemand"
+           @grid-power-updated="updateGridPower"
+           @config-updated="handleConfigUpdated"
+           @speed-changed="handleSpeedChange"
+           @battery-critical="handleBatteryCritical"
+           @history-updated="onHistoryUpdated"
+           @hourly-data-update="handleHourlyDataUpdate"
+           @simulation-complete="handleSimulationComplete"
+           @energy-models-updated="handleEnergyModelsUpdate"
+           @solar-output-updated="solarOutput = $event"
+           @battery-level-updated="batteryLevel = $event"
+           @battery-status-updated="batteryStatus = $event"
+           @update-appliance-power="handleAppliancePowerUpdate"
         />
       </div>
     </div>
@@ -116,7 +116,6 @@
 
 <script>
 import EnergyFlowDiagram from './components/EnergyFlowDiagram.vue';
-import ChartManager from './components/chartConfig.js';
 
 export default {
   components: {
@@ -126,41 +125,34 @@ export default {
   data() {
     return {
       currentSimulationStep: 0,
-
-      showRlControls: true, // Default to showing controls
+      showRlControls: true,
 
       // Simulation state
       simulationRunning: false,
-      simulationState: 'idle', // 'idle', 'manual', or 'ai'
+      simulationState: 'idle',
       simulationTimer: null,
-      simulationInterval: 500, // Default to medium speed
-      simulationElapsedTime: 0, // Elapsed time in seconds
+      simulationInterval: 500,
+      simulationElapsedTime: 0,
       
       // Energy data
       solarOutput: 0,
       batteryLevel: 35,
-      batteryStatus: 'empty', // 'charging', 'discharging', or 'empty'
+      batteryStatus: 'empty',
       batteryPower: 0,
       gridPower: 0,
-      houseDemand: 0,
+      houseDemand: 0.2,
 
       // Simulation clock
       simulationElapsedMinutes: 0,
       simulationFormattedTime: "00:00",
       simulationDay: 1,
 
-      // plot data for manual simulation
-      hourlyData: {
-        temperature: 0,
-        solarOutput: 0,
-        price: 0,
-        hour: "00:00"
-      },
+      // Mock hourly data for demo
+      hourlyData: this.generateMockHourlyData(),
       simulationSteps: 0,
       maxSimulationSteps: null,
       simulationCompleted: false,
 
-      // Add these properties for energy models
       energyModelState: {
         indoorTemperature: 24.0,
         waterTemperature: 55.0,
@@ -171,8 +163,25 @@ export default {
         evPower: 0
       },
       
-      // Devices/appliances - will be loaded from configuration
-      appliances: [],
+      // Devices/appliances
+      appliances: [
+        // Group 1: Fixed power, must run for full duration
+        { id: 1, name: 'Dishwasher', type: 'dishwasher', power: 1.8, active: false, group: 1 },
+        { id: 2, name: 'Wash Machine', type: 'wash_machine', power: 0.4, active: false, group: 1 },
+        { id: 3, name: 'Clothes Dryer', type: 'clothes_dryer', power: 1.2, active: false, group: 1 },
+      
+        // Group 2: Variable power, can be toggled during allowed time
+        { id: 4, name: 'HVAC', type: 'hvac', power: 2.5, active: false, group: 2 },
+        { id: 5, name: 'Water Heater', type: 'water_heater', power: 4.5, active: false, group: 2 },
+        { id: 6, name: 'EV Charger', type: 'ev_charger', power: 6.0, active: false, group: 2 },
+      
+        // Group 3: Fixed power, on for entire duration
+        { id: 7, name: 'TV', type: 'tv', power: 0.1, active: false, group: 3 },
+        { id: 8, name: 'Refrigerator', type: 'refrigerator', power: 0.2, active: true, group: 3 },
+        { id: 9, name: 'Lights', type: 'lights', power: 0.2, active: false, group: 3 },
+        { id: 10, name: 'Vacuum Cleaner', type: 'vacuum', power: 1.2, active: false, group: 3 },
+        { id: 11, name: 'Hair Dryer', type: 'hair_dryer', power: 1.0, active: false, group: 3 }
+      ],
       
       // Initial values to reset to
       initialState: {
@@ -181,7 +190,7 @@ export default {
         batteryStatus: 'empty',
         batteryPower: 0,
         gridPower: 0,
-        houseDemand: 0
+        houseDemand: 0.2
       },
 
       // AI/RL related data
@@ -198,662 +207,437 @@ export default {
         dishwasher: new Array(96).fill(0),
         wash_machine: new Array(96).fill(0),
         clothes_dryer: new Array(96).fill(0)
-      },
+      }
     };
+  },
+
+  computed: {
+    canGoBack() {
+      return !(this.currentDay === 1 && this.currentTimeStep === 0);
+    },
+
+    formattedTimeStep() {
+      const totalMinutes = this.currentTimeStep * 15;
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    },
+
+    formattedStepDisplay() {
+      return `${this.currentTimeStep + 1}/96`;
+    }
   },
   
   mounted() {
-    // Initialize appliances with defaults if none provided
-    if (this.appliances.length === 0) {
-      this.appliances = [
-        // Group 1: Fixed power, must run for full duration
-        { id: 1, name: 'Dishwasher', type: 'dishwasher', power: 1.8, active: false, group: 1 },
-        { id: 2, name: 'Wash Machine', type: 'wash_machine', power: 0.4, active: false, group: 1 },
-        { id: 3, name: 'Clothes Dryer', type: 'clothes_dryer', power: 1.2, active: false, group: 1 },
-      
-        // Group 2: Variable power, can be toggled during allowed time
-        { id: 4, name: 'HVAC', type: 'hvac', power: 2.5, active: false, group: 2 },
-        { id: 5, name: 'Water Heater', type: 'water_heater', power: 4.5, active: false, group: 2 },
-        { id: 6, name: 'EV Charger', type: 'ev_charger', power: 6.0, active: false, group: 2 },
-      
-        // Group 3: Fixed power, on for entire duration
-        { id: 7, name: 'TV', type: 'tv', power: 0.1, active: false, group: 3 },
-        { id: 8, name: 'Refrigerator', type: 'refrigerator', power: 0.2, active: false, group: 3 },
-        { id: 9, name: 'Lights', type: 'lights', power: 0.2, active: false, group: 3 },
-        { id: 10, name: 'Vacuum Cleaner', type: 'vacuum', power: 1.2, active: false, group: 3 },
-        { id: 11, name: 'Hair Dryer', type: 'hair_dryer', power: 1.0, active: false, group: 3 }
-      ];
-    }
-    
-    // Set up socket connection
-    const socket = io('http://localhost:3000', {
-      transports: ['websocket', 'polling']
-    });
-    this.socket = socket;
-  
-    socket.on('connect', () => {
-      console.log("Socket connected!");
-      this.socket.emit('get_current_state');
-    });
-  
-    socket.on('disconnect', () => {
-      console.log("Socket disconnected!");
-    });
-  
-    socket.on('rl_prediction', (data) => {
-      // Only update if data is for current timeStep to avoid race conditions
-      if (data && typeof data.timestamp !== 'undefined' && typeof data.day !== 'undefined') {
-        // Store the actual prediction
-        this.rlPrediction = data;
+    console.log('Smart Home Energy Simulator Demo Mode Initialized');
+    // Create mock socket for EnergyFlowDiagram component
+    window.io = () => this.createMockSocket();
+  },
 
-        // Update application state based on RL prediction
-        this.updateSimulationFromRl(data);
+  methods: {
+    // Generate mock hourly data for 24 hours
+    generateMockHourlyData() {
+      const data = [];
+      for (let hour = 0; hour < 24; hour++) {
+        // Solar output follows a bell curve (6am-6pm)
+        let solar = 0;
+        if (hour >= 6 && hour <= 18) {
+          const normalizedHour = (hour - 12) / 6; // -1 to 1
+          solar = 5 * Math.max(0, 1 - normalizedHour * normalizedHour) * (0.8 + Math.random() * 0.4);
+        }
         
-        // Update history data
-        this.updateHistoryData(data);
+        // Temperature varies throughout the day
+        const temp = 20 + 10 * Math.sin((hour - 6) / 24 * 2 * Math.PI) + Math.random() * 3;
+        
+        // Price is higher during peak hours (6pm-10pm)
+        let price = 0.02;
+        if (hour >= 18 && hour <= 22) price = 0.045;
+        else if (hour >= 6 && hour <= 9) price = 0.035;
+        price += Math.random() * 0.01;
+        
+        data.push({
+          hour: `${hour.toString().padStart(2, '0')}:00`,
+          hourValue: hour,
+          solar: parseFloat(solar.toFixed(1)),
+          temperature: parseFloat(temp.toFixed(1)),
+          price: parseFloat(price.toFixed(3))
+        });
+      }
+      return data;
+    },
+
+    // Create mock socket for components that expect socket.io
+    createMockSocket() {
+      const mockSocket = {
+        on: (event, callback) => {
+          // Store callbacks for later use
+          if (!this.mockCallbacks) this.mockCallbacks = {};
+          this.mockCallbacks[event] = callback;
+        },
+        emit: (event, data) => {
+          // Handle specific events that components emit
+          if (event === 'start_simulation') {
+            this.startSimulation(data);
+          } else if (event === 'stop_simulation') {
+            this.pauseSimulation();
+          } else if (event === 'reset_simulation') {
+            this.resetSimulation();
+          }
+        },
+        removeAllListeners: () => {},
+        disconnect: () => {}
+      };
+      
+      // Simulate connection after short delay
+      setTimeout(() => {
+        if (this.mockCallbacks && this.mockCallbacks.connect) {
+          this.mockCallbacks.connect();
+        }
+      }, 100);
+      
+      return mockSocket;
+    },
+
+    // Event handlers for the EnergyFlowDiagram component
+    startSimulation(options = {}) {
+      console.log('Start simulation', options);
+      this.simulationRunning = true;
+      this.simulationState = 'manual';
+      this.simulationSteps = 0;
+      this.simulationElapsedMinutes = 0;
+      this.simulationFormattedTime = "00:00";
+      
+      // Start the simulation timer
+      this.simulationTimer = setInterval(() => {
+        this.updateSimulation();
+      }, 2000);
+
+      // Notify the EnergyFlowDiagram component
+      if (this.mockCallbacks && this.mockCallbacks.simulation_status) {
+        this.mockCallbacks.simulation_status({
+          running: true,
+          mode: 'manual'
+        });
+      }
+    },
+
+    updateSimulation() {
+      if (!this.simulationRunning) return;
+
+      // Update simulation time
+      this.simulationElapsedMinutes += 15; // 15 minutes per step
+      const hours = Math.floor(this.simulationElapsedMinutes / 60) % 24;
+      const minutes = this.simulationElapsedMinutes % 60;
+      this.simulationFormattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      
+      const currentStep = Math.floor(this.simulationElapsedMinutes / 15) % 96;
+      this.simulationSteps = Math.floor(this.simulationElapsedMinutes / 15);
+      
+      // Get current hour data
+      const hourIndex = hours % 24;
+      const currentHourData = this.hourlyData[hourIndex];
+      
+      // Update solar output based on time
+      this.solarOutput = currentHourData.solar;
+
+      // Calculate house demand
+      this.houseDemand = parseFloat(
+        this.appliances
+          .filter(app => app.active)
+          .reduce((sum, app) => sum + app.power, 0)
+          .toFixed(1)
+      );
+
+      // Simple battery and grid simulation
+      this.updateEnergyFlows(currentHourData);
+
+      // Auto-toggle some appliances for realistic demo
+      this.autoToggleAppliances(hours, currentStep);
+
+      // Update energy models
+      this.updateEnergyModels(currentHourData);
+
+      // Notify components with mock simulation update
+      if (this.mockCallbacks && this.mockCallbacks.simulation_update) {
+        this.mockCallbacks.simulation_update({
+          time: new Date().toISOString(),
+          devices: this.appliances,
+          solarOutput: this.solarOutput,
+          batteryLevel: this.batteryLevel,
+          batteryStatus: this.batteryStatus,
+          batteryPower: this.batteryPower,
+          gridDraw: this.gridPower,
+          houseDemand: this.houseDemand,
+          simulationMode: this.simulationState,
+          elapsedMinutes: this.simulationElapsedMinutes,
+          formattedTime: this.simulationFormattedTime,
+          currentStep: currentStep,
+          energyModels: this.energyModelState,
+          simulationDay: Math.floor(this.simulationElapsedMinutes / (24 * 60)) + 1
+        });
+      }
+
+      // Reset after 24 hours
+      if (this.simulationElapsedMinutes >= 24 * 60) {
+        this.simulationElapsedMinutes = 0;
+        this.simulationDay++;
+      }
+    },
+
+    updateEnergyFlows(hourData) {
+      const BATTERY_MIN_LEVEL = 10.01;
+      const MAX_BATTERY_CHARGE_RATE = 2.4;
+      const MAX_BATTERY_DISCHARGE_RATE = 2.4;
+
+      // Calculate basic energy flows
+      const solarToHouse = Math.min(this.solarOutput, this.houseDemand);
+      const remainingDemand = Math.max(0, this.houseDemand - solarToHouse);
+      const excessSolar = Math.max(0, this.solarOutput - solarToHouse);
+
+      // Hour-based logic for battery charging/discharging
+      const hour = parseInt(hourData.hour.split(':')[0]);
+      const isPreferredChargingTime = (hour >= 12 && hour <= 15) || (hour >= 0 && hour <= 5);
+
+      if (isPreferredChargingTime) {
+        // Charge from excess solar or grid during off-peak
+        if (excessSolar > 0 && this.batteryLevel < 100) {
+          this.batteryStatus = 'charging';
+          this.batteryPower = Math.min(excessSolar, MAX_BATTERY_CHARGE_RATE);
+          this.batteryLevel = Math.min(100, this.batteryLevel + 2);
+        } else if (hour >= 0 && hour <= 5 && this.batteryLevel < 80) {
+          this.batteryStatus = 'charging';
+          this.batteryPower = 1.5;
+          this.batteryLevel = Math.min(100, this.batteryLevel + 1);
+        } else {
+          this.batteryStatus = 'empty';
+          this.batteryPower = 0;
+        }
       } else {
-        console.warn("Received invalid RL prediction data:", data);
-      }
-    });
-
-    socket.on('rl_error', (error) => {
-      console.error("RL prediction error:", error);
-      // Handle error - maybe display to user
-    });
-
-    socket.on('simulation_mode_changed', (data) => {
-      this.simulationState = data.mode;
-      console.log(`Simulation mode changed to: ${data.mode}`);
-    });
-
-    socket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
-    });
-  
-    socket.on('simulation_update', (data) => {
-      // Only update if this is for manual simulation mode
-      if (data.simulationMode === 'manual') {
-        // Update app state directly from the simulation
-        this.solarOutput = data.solarOutput || 0;
-        this.batteryLevel = data.batteryLevel || 35;
-        this.batteryStatus = data.batteryStatus || 'empty';
-        this.batteryPower = data.batteryPower || 0;
-        this.gridPower = data.gridDraw || 0;
-        this.houseDemand = data.houseDemand || 0;
-
-        // Update time information
-        this.simulationElapsedMinutes = data.elapsedMinutes || 0;
-        this.simulationFormattedTime = data.formattedTime || "00:00";
-        this.simulationDay = Math.floor(this.simulationElapsedMinutes / (24 * 60)) + 1;
-
-        // Update energy model state if provided
-        if (data.energyModels) {
-          this.energyModelState = {
-            ...this.energyModelState,
-            ...data.energyModels
-          };
-        }
-
-        // Increment simulation steps
-        this.simulationSteps++;
-    
-        // Update appliances based on devices if available
-        if (data.devices && data.devices.length > 0) {
-          this.appliances = this.appliances.map(app => {
-            // Find matching device
-            const device = data.devices.find(d => d.Type === app.type);
-            if (device) {
-              return {
-                ...app,
-                active: device.Status === 'active',
-                power: device.PowerLevel
-              };
-            }
-            return app;
-          });
+        // Peak hours - discharge battery if needed
+        if (remainingDemand > 0 && this.batteryLevel > BATTERY_MIN_LEVEL) {
+          this.batteryStatus = 'discharging';
+          this.batteryPower = -Math.min(remainingDemand, MAX_BATTERY_DISCHARGE_RATE);
+          this.batteryLevel = Math.max(BATTERY_MIN_LEVEL, this.batteryLevel - 1.5);
+        } else {
+          this.batteryStatus = 'empty';
+          this.batteryPower = 0;
         }
       }
-    });
 
-    socket.on('simulation_status', (status) => {
-      this.simulationRunning = status.running;
+      // Calculate grid power
+      const batteryContribution = this.batteryStatus === 'discharging' ? Math.abs(this.batteryPower) : 0;
+      const gridToBattery = this.batteryStatus === 'charging' && excessSolar < this.batteryPower ? this.batteryPower - excessSolar : 0;
+      this.gridPower = parseFloat(Math.max(0, remainingDemand - batteryContribution + gridToBattery).toFixed(1));
 
-      //console.log('Received simulation_status:', status);
+      // Handle solar export (negative grid power)
+      if (excessSolar > this.batteryPower && this.batteryLevel > 95) {
+        this.gridPower = -parseFloat((excessSolar - this.batteryPower).toFixed(1));
+      }
+    },
 
-      if (status.mode) {
-        this.simulationState = status.mode;
-        this.showRlControls = true;
+    updateEnergyModels(hourData) {
+      // Simple energy model updates
+      const hour = parseInt(hourData.hour.split(':')[0]);
+      
+      // Indoor temperature model (simplified)
+      const targetTemp = 22;
+      const hvacActive = this.appliances.find(app => app.type === 'hvac')?.active || false;
+      
+      if (hvacActive) {
+        this.energyModelState.indoorTemperature += (targetTemp - this.energyModelState.indoorTemperature) * 0.3;
+      } else {
+        // Drift toward outdoor temperature
+        this.energyModelState.indoorTemperature += (hourData.temperature - this.energyModelState.indoorTemperature) * 0.1;
       }
 
-      // Handle preserved time state
-      if (status.preservedTime && status.elapsedMinutes) {
-        this.simulationElapsedMinutes = status.elapsedMinutes;
+      // Water heater model
+      const waterHeaterActive = this.appliances.find(app => app.type === 'water_heater')?.active || false;
+      const targetWaterTemp = 60;
+      
+      if (waterHeaterActive) {
+        this.energyModelState.waterTemperature += (targetWaterTemp - this.energyModelState.waterTemperature) * 0.4;
+      } else {
+        // Natural cooling
+        this.energyModelState.waterTemperature = Math.max(45, this.energyModelState.waterTemperature - 0.5);
       }
 
-      // Handle time limit reached
-      if (status.timeLimitReached) {
-        this.simulationRunning = false;
+      // EV model
+      this.energyModelState.evConnected = hour >= 18 || hour <= 7; // Home during evening/night
+      
+      if (this.energyModelState.evConnected) {
+        const evChargerActive = this.appliances.find(app => app.type === 'ev_charger')?.active || false;
+        if (evChargerActive && this.energyModelState.evSoC < 0.85) {
+          this.energyModelState.evSoC = Math.min(0.85, this.energyModelState.evSoC + 0.05);
+        }
+      } else {
+        // EV away, slowly drain battery
+        this.energyModelState.evSoC = Math.max(0.2, this.energyModelState.evSoC - 0.02);
       }
-    });
+    },
 
-    // Handle socket error events
-    socket.on('error', (error) => {
-      console.error('Socket error:', error);
-      alert(`Socket error: ${error.message || 'Unknown error'}`);
-    });
+    autoToggleAppliances(hour, step) {
+      // Smart automation patterns for demo
+      
+      // Morning routine
+      if (hour === 7 && step % 4 === 0) {
+        const waterHeater = this.appliances.find(app => app.type === 'water_heater');
+        if (waterHeater && !waterHeater.active) {
+          this.toggleAppliance(waterHeater.id);
+        }
+      }
 
-    socket.on('simulation_reset', (data) => {
-      // Reset all local state
+      // Hot afternoon - turn on HVAC
+      if (hour === 14 && step % 4 === 0) {
+        const hvac = this.appliances.find(app => app.type === 'hvac');
+        if (hvac && !hvac.active) {
+          this.toggleAppliance(hvac.id);
+        }
+      }
+
+      // Evening routine
+      if (hour === 18 && step % 4 === 0) {
+        const lights = this.appliances.find(app => app.type === 'lights');
+        if (lights && !lights.active) {
+          this.toggleAppliance(lights.id);
+        }
+      }
+
+      // Start EV charging at low price hours
+      if ((hour === 0 || hour === 12) && this.energyModelState.evConnected && step % 4 === 0) {
+        const evCharger = this.appliances.find(app => app.type === 'ev_charger');
+        if (evCharger && !evCharger.active && this.energyModelState.evSoC < 0.8) {
+          this.toggleAppliance(evCharger.id);
+        }
+      }
+
+      // Evening dishwasher
+      if (hour === 19 && step % 4 === 0) {
+        const dishwasher = this.appliances.find(app => app.type === 'dishwasher');
+        if (dishwasher && !dishwasher.active) {
+          this.toggleAppliance(dishwasher.id);
+        }
+      }
+
+      // Turn off lights at night
+      if (hour === 23 && step % 4 === 0) {
+        const lights = this.appliances.find(app => app.type === 'lights');
+        if (lights && lights.active) {
+          this.toggleAppliance(lights.id);
+        }
+      }
+    },
+
+    pauseSimulation() {
+      console.log('Pause simulation');
+      this.simulationRunning = false;
+      if (this.simulationTimer) {
+        clearInterval(this.simulationTimer);
+        this.simulationTimer = null;
+      }
+
+      if (this.mockCallbacks && this.mockCallbacks.simulation_status) {
+        this.mockCallbacks.simulation_status({
+          running: false,
+          mode: this.simulationState
+        });
+      }
+    },
+
+    resumeSimulation() {
+      console.log('Resume simulation');
+      this.simulationRunning = true;
+      
+      this.simulationTimer = setInterval(() => {
+        this.updateSimulation();
+      }, 2000);
+
+      if (this.mockCallbacks && this.mockCallbacks.simulation_status) {
+        this.mockCallbacks.simulation_status({
+          running: true,
+          mode: this.simulationState
+        });
+      }
+    },
+
+    resetSimulation() {
+      console.log('Reset simulation');
       this.simulationRunning = false;
       this.simulationState = 'idle';
-      this.solarOutput = data.solarOutput || 0;
-      this.batteryLevel = data.batteryLevel || 35;
-      this.batteryStatus = data.batteryStatus || 'empty';
-      this.batteryPower = data.batteryPower || 0;
-      this.gridPower = data.gridDraw || 0;
-      this.houseDemand = data.houseDemand || 0;
+      this.simulationElapsedMinutes = 0;
+      this.simulationFormattedTime = "00:00";
+      this.simulationDay = 1;
       this.currentDay = 1;
       this.currentTimeStep = 0;
-      this.rlPrediction = null;
       
-      // Stop autoplay if active
-      if (this.autoPlayActive) {
+      if (this.simulationTimer) {
+        clearInterval(this.simulationTimer);
+        this.simulationTimer = null;
+      }
+      
+      if (this.autoPlayTimer) {
         clearInterval(this.autoPlayTimer);
+        this.autoPlayTimer = null;
         this.autoPlayActive = false;
       }
       
       // Reset appliances
-      this.appliances = this.appliances.map(app => ({
-        ...app,
-        active: false
-      }));
-      
-      // Reset history data
-      this.homeTemperatureHistory = new Array(96).fill(null);
-      this.waterTemperatureHistory = new Array(96).fill(null);
-      this.appliancePowerHistory = {
-        dishwasher: new Array(96).fill(0),
-        wash_machine: new Array(96).fill(0),
-        clothes_dryer: new Array(96).fill(0)
-      };
-    });
-
-    socket.on('devices_updated', (response) => {
-      // Just acknowledge - don't trigger another update
-      //console.log('Devices updated:', response);
-  
-      // If server calculated a new demand, use it
-      if (response.houseDemand) {
-        this.houseDemand = response.houseDemand;
-      }
-    });
-
-    socket.on('simulation_time_limit_reached', (data) => {
-      // console.log(`Simulation time limit reached after ${data.elapsedTime.toFixed(1)} seconds`);
-    
-      // Update local simulation state
-      this.simulationRunning = false;
-      this.simulationCompleted = true;
-    
-      // Show a notification to the user
-      this.showTimeLimitNotification(data);
-    });
-
-    // Add this code to the socket handler section
-    socket.on('energy_models_update_ack', (data) => {
-      console.log('Energy models update acknowledged by server', data);
-    });
-  },
-
-  methods: {
-    handleBatteryCritical() {
-      // Use consistent threshold with the diagram
-      const BATTERY_MIN_LEVEL = 10.01;
-  
-      // Only force empty status when battery is at or below minimum and currently discharging
-      if (this.batteryLevel <= BATTERY_MIN_LEVEL && 
-         (this.batteryStatus === 'discharging' || this.batteryPower < 0)) {
-        console.log(`Battery protection: Level ${this.batteryLevel.toFixed(1)}% reached minimum threshold`);
-    
-        // Update local state
-        this.batteryStatus = 'empty';
-        this.batteryPower = 0;
-    
-        // Update server if connected
-        if (this.socket) {
-          this.socket.emit('update_battery_state', {
-            batteryStatus: 'empty',
-            batteryPower: 0,
-            batteryLevel: this.batteryLevel,
-            useGridForRemaining: true
-          });
+      this.appliances.forEach(app => {
+        if (app.id !== 8) { // Keep refrigerator on
+          app.active = false;
         }
-      }
-    },
-
-    handleAppliancePowerUpdate(data) {
-      // Find the appliance in the appliances array
-      const appIndex = this.appliances.findIndex(app => app.id === data.id);
-      
-      if (appIndex !== -1) {
-        console.log(`App.vue updating ${data.name} power from ${this.appliances[appIndex].power} to ${data.power} kW`);
-        
-        // Create a new array with the updated appliance to ensure reactivity
-        const updatedAppliances = [...this.appliances];
-
-        updatedAppliances[appIndex] = {
-          ...updatedAppliances[appIndex],
-          power: data.power
-        };
-        
-        // Replace the entire array to trigger reactivity
-        this.appliances = updatedAppliances;
-        
-        // If needed, also update houseDemand
-        this.calcHouseDemand();
-        
-        // If you have a socket connection, send update to server
-        if (this.socket) {
-          this.socket.emit('update_devices', {
-            devices: this.appliances.map(app => ({
-              id: app.id,
-              name: app.name,
-              type: app.type,
-              power: app.power,
-              active: app.active
-            }))
-          });
-        }
-      } else {
-        console.warn(`Appliance with id ${data.id} not found in App.vue`);
-      }
-    },
-
-    calcHouseDemand() {
-      const newHouseDemand = parseFloat(
-      this.appliances
-        .filter(app => app.active)
-        .reduce((sum, app) => sum + (parseFloat(app.power) || 0), 0)
-        .toFixed(1)
-      );
-    
-      // Update houseDemand
-      this.houseDemand = newHouseDemand;
-    },
-
-    onDataLoaded(data) {
-      console.log('Hourly data loaded:', data);
-      // You can store the data if needed
-      this.hourlyDataLoaded = true;
-    },
-
-    onHourDataUpdated(hourData) {
-      //console.log('Hour data updated:', hourData);
-      // Update local state with the latest hour data
-      this.currentHourData = hourData;
-    },
-
-    showAlert(message) {
-      // Use setTimeout to allow UI updates to complete first
-      setTimeout(() => {
-        try {
-          window.alert(message);
-        } catch (e) {
-          console.error("Error showing alert:", e);
-        }
-      }, 100);
-    },
-
-    startSimulation(options = {}) {
-      // Reset simulation state
-      this.simulationRunning = true;
-      this.simulationState = 'manual';
-      this.simulationSteps = 0;
-      this.completionAlertShown = false; // Add this to track if alert was shown
-      this.simulationMessage = ""; // Add this for UI messages
-      
-      // Convert hours to steps (each step is 15 minutes)
-      const requestedHours = options.timeLimit ? options.timeLimit / 3600 : this.simulationHours || 1;
-      const requestedSteps = Math.floor(requestedHours * 4); // 4 steps per hour
-      
-      console.log(`Starting simulation for ${requestedHours} hours (${requestedSteps} steps)`);
-      
-      // Set maximum steps - either from options or calculated from hours
-      this.maxSimulationSteps = options.maxSteps || requestedSteps;
-      
-      // Reset simulation time tracking
-      this.simulationElapsedMinutes = 0;
-      
-      // Tell server to start simulation
-      if (this.socket) {
-        this.socket.emit('start_simulation', {
-          timeLimit: requestedHours * 3600, // Convert to seconds
-          initialState: {
-            simulationMode: 'manual',
-            // Rest of initialState as before
-          },
-          interval: this.simulationInterval
-        });
-        
-        // Set up a progress checking interval
-        if (this.simulationProgressTimer) {
-          clearInterval(this.simulationProgressTimer);
-        }
-        
-        // Check progress every second
-        this.simulationProgressTimer = setInterval(() => {
-          this.checkSimulationCompletion();
-        }, 1000);
-      }
-    },
-
-    // Add this method to validate appliance power values
-    validateApplianceState(appliances) {
-      if (!appliances || !Array.isArray(appliances)) return appliances;
-      
-      return appliances.map(app => {
-        // Create a new object to avoid mutation issues
-        const validatedApp = {...app};
-        
-        // If appliance is active but has no power, use default
-        if (validatedApp.active && 
-            (validatedApp.power === 0 || isNaN(validatedApp.power))) {
-          validatedApp.power = validatedApp.defaultPower || 1.0;
-          console.log(`Fixed zero power for active appliance: ${validatedApp.name}`);
-        }
-        
-        return validatedApp;
       });
-    },
-
-    checkSimulationCompletion() {
-      // Only check if we have a set maximum and we're running
-      if (this.maxSimulationSteps && this.simulationRunning) {
-        // Convert elapsed time to steps (each step is 15 minutes)
-        const timeBasedSteps = Math.floor(this.simulationElapsedMinutes / 15);
-        
-        // Log current progress
-        //console.log(`Simulation progress: ${timeBasedSteps} steps of ${this.maxSimulationSteps} (${this.simulationElapsedMinutes} minutes elapsed)`);
-        
-        // Check if we've reached the limit based on time elapsed, not data updates
-        if (timeBasedSteps >= this.maxSimulationSteps) {
-          console.log("Simulation complete - reached time limit");
-          this.pauseSimulation();
-          
-          // Show completion message without alert - add a message to UI instead
-          this.simulationMessage = "Simulation complete - reached end of data";
-          
-          // Only show alert if not previously shown
-          if (!this.completionAlertShown) {
-            this.completionAlertShown = true;
-            
-            // Use setTimeout to avoid blocking UI
-            setTimeout(() => {
-              try {
-                alert("Simulation complete. Reached the end of available data.");
-              } catch (e) {
-                console.error("Error showing completion alert:", e);
-              }
-            }, 100);
-          }
-        }
-      }
-    },
-
-    // Handle hourly data updates
-    handleHourlyDataUpdate(data) {
-      // Debug logging for simulation steps
-      // console.log(`Hourly data update - step: ${this.simulationSteps}, max: ${this.maxSimulationSteps}`);
- 
-      if (data) {
-        data.devices = this.validateApplianceState(data.devices);
-        this.hourlyData = data;
-
-        // If energy models data is included, update that too
-        if (data.energyModels) {
-          this.energyModelState = {
-            ...this.energyModelState,
-            ...data.energyModels
-          };
-        }
-      }
       
-      // If in manual mode, update simulation values
-      if (data && this.simulationState === 'manual' && this.simulationRunning) {
-        if (typeof data.solarOutput === 'number') {
-          // Update solar output from hourly data
-          this.$emit('solar-output-updated', data.solarOutput);
-
-          // Send the hourly data to the server
-          if (this.socket) {
-            this.socket.emit('hourly_data_update', {
-              solarOutput: data.solarOutput,
-              temperature: data.temperature || 0,
-              price: data.price || 0,
-              hour: data.hour || "00:00",
-              simulationStep: data.simulationStep,
-              energyModels: data.energyModels || null
-            });
-          }
-        }
-
-        // Increment simulation steps
-        this.simulationSteps++;
-      }
-    },
-  
-    // Add method to handle simulation completion
-    handleSimulationComplete() {
-      this.pauseSimulation();
-      // this.showAlert("Simulation complete. Reached the end of available hourly data.");
-    },
-
-    // Handle energy models update from EnergyFlowDiagram
-    handleEnergyModelsUpdate(data) {
-      // Update local state
-      this.energyModelState = data;
+      // Reset energy values
+      Object.assign(this, this.initialState);
       
-      // Update server if in manual mode
-      if (this.simulationState === 'manual' && this.simulationRunning && this.socket) {
-        this.socket.emit('energy_models_update', data);
-      }
-    },
-    
-    pauseSimulation() {
-      this.simulationRunning = false;
-      //console.log(`pauseSimulation in App.vue: state=${this.simulationState}, running=${this.simulationRunning}`);
-  
-      // Pause autoplay if active
-      if (this.autoPlayActive) {
-        clearInterval(this.autoPlayTimer);
-        this.autoPlayTimer = null;
-        this.autoPlayActive = false;
-      }
-
-      // Call memory optimization
-      this.optimizeMemoryUsage();
-  
-      // Tell server to stop
-      if (this.socket) {
-        this.socket.emit('stop_simulation');
-      }
-    },
-    
-    resumeSimulation() {
-      this.simulationRunning = true;
-
-      //console.log(`resumeSimulation in App.vue: state=${this.simulationState}, running=${this.simulationRunning}`);
- 
-      // Tell server to restart
-      if (this.socket) {
-        let timeScale = 60;
-        // Safely try to get timeScale from selected speed
-        try {
-          if (this.selectedSpeed !== undefined && Array.isArray(this.speedOptions)) {
-            const speedOption = this.speedOptions.find(option => option.value === this.selectedSpeed);
-            if (speedOption) {
-              timeScale = speedOption.value * 30; // Convert to timeScale
-            }
-          }
-        } catch (error) {
-          console.warn("Could not determine timeScale from speed options:", error);
-        }
- 
-        this.socket.emit('start_simulation', {
-          initialState: {
-            simulationMode: this.simulationState,
-            devices: this.appliances.map(app => ({
-              id: app.id,
-              name: app.name,
-              type: app.type,
-              power: app.power,
-              active: app.active
-            })),
-            // Add current elapsed time info
-            preserveTime: true,
-            elapsedMinutes: this.simulationElapsedMinutes,
-            timeScale: timeScale // Pass current speed setting
-          },
-          interval: this.simulationInterval || 1000,
-          maxSteps: this.maxSimulationSteps
-        });
-      }
-    },
-    
-    resetSimulation() {
-      // Stop any active simulations
-      this.simulationRunning = false;
-      this.simulationState = 'idle';
-      this.simulationCompleted = false;
-
-      //console.log(`resetSimulation in App.vue: state=${this.simulationState}, running=${this.simulationRunning}`);
- 
-      // Stop autoplay if active
-      if (this.autoPlayActive) {
-        clearInterval(this.autoPlayTimer);
-        this.autoPlayTimer = null;
-        this.autoPlayActive = false;
-      }
-  
-      // Reset all values to initial state
-      this.solarOutput = this.initialState.solarOutput;
-      this.batteryLevel = this.initialState.batteryLevel;
-      this.batteryStatus = this.initialState.batteryStatus;
-      this.batteryPower = 0;
-      this.gridPower = this.initialState.gridPower;
-      this.houseDemand = this.initialState.houseDemand;
-
-      // Reset RL simulation state
-      this.currentDay = 1;
-      this.currentTimeStep = 0;
-      this.rlPrediction = null;
-  
-      // Reset appliances to inactive
-      this.appliances = this.appliances.map(app => ({
-        ...app,
-        active: false
-      }));
-
-      // Reset history data
-      this.homeTemperatureHistory = new Array(96).fill(null);
-      this.waterTemperatureHistory = new Array(96).fill(null);
-      this.appliancePowerHistory = {
-        dishwasher: new Array(96).fill(0),
-        wash_machine: new Array(96).fill(0),
-        clothes_dryer: new Array(96).fill(0)
-      };
-
-      // Tell server to reset
-      if (this.socket) {
-        this.socket.emit('reset_simulation');
-      }
-
-      ChartManager.optimizeMemoryUsage();
-
-      // Reset energy model state
+      // Reset energy models
       this.energyModelState = {
         indoorTemperature: 24.0,
         waterTemperature: 55.0,
-        evSoC: 0.0,
+        evSoC: 0.3,
         evConnected: false,
         hvacPower: 0,
         waterHeaterPower: 0,
         evPower: 0
       };
+
+      // Reset history
+      this.homeTemperatureHistory = new Array(96).fill(null);
+      this.waterTemperatureHistory = new Array(96).fill(null);
+      this.appliancePowerHistory = {
+        dishwasher: new Array(96).fill(0),
+        wash_machine: new Array(96).fill(0),
+        clothes_dryer: new Array(96).fill(0)
+      };
+
+      if (this.mockCallbacks && this.mockCallbacks.simulation_reset) {
+        this.mockCallbacks.simulation_reset({
+          time: new Date().toISOString(),
+          devices: this.appliances,
+          solarOutput: this.solarOutput,
+          batteryLevel: this.batteryLevel,
+          batteryStatus: this.batteryStatus,
+          batteryPower: 0,
+          gridDraw: this.gridPower,
+          houseDemand: this.houseDemand,
+          simulationMode: 'idle'
+        });
+      }
     },
 
-    optimizeMemoryUsage() {
-      // Clear references to large objects
-      this.pendingAnimationFrames = [];
+    toggleAppliance(id) {
+      const appIndex = this.appliances.findIndex(app => app.id === id);
+      if (appIndex !== -1) {
+        this.appliances[appIndex].active = !this.appliances[appIndex].active;
+        console.log(`${this.appliances[appIndex].name} ${this.appliances[appIndex].active ? 'ON' : 'OFF'}`);
         
-      // Force cleanup of temperature history for data points we don't need
-      if (this.currentTimeStep > 0) {
-        const keepPoints = 10; // Only keep recent points and future points
-        const startClear = Math.max(0, this.currentTimeStep - keepPoints);
-        //const endClear = Math.min(startClear + keepPoints, this.temperatureData.length);
-          
-        // Clear unneeded history - make sure we use the correct property names
-        for (let i = 0; i < startClear; i++) {
-          if (this.homeTemperatureHistory) {
-            this.homeTemperatureHistory[i] = null;
-          }
-          if (this.waterTemperatureHistory) {
-            this.waterTemperatureHistory[i] = null;
-          }
-        }
-      } 
-    },  
-    
-    toggleAppliance(data) {
-      // Handle both simple ID toggle and more complex data update
-      if (typeof data === 'number' || typeof data === 'string') {
-        // Find the appliance and toggle its status
-        this.appliances = this.appliances.map(app => {
-          if (app.id === data) {
-            return { ...app, active: !app.active };
-          }
-          return app;
-        });
-    
-        // Calculate new house demand for immediate UI feedback
-        const newHouseDemand = parseFloat(
+        // Recalculate house demand immediately
+        this.houseDemand = parseFloat(
           this.appliances
             .filter(app => app.active)
-            .reduce((sum, app) => sum + (parseFloat(app.power) || 0), 0)
+            .reduce((sum, app) => sum + app.power, 0)
             .toFixed(1)
         );
-
-        // If in manual mode, send device update to server
-        if (this.simulationRunning && this.simulationState === 'manual' && this.socket) {
-          // Prepare device data for server
-          const deviceData = {
-            devices: this.appliances.map(app => ({
-              id: app.id,
-              name: app.name,
-              type: app.type,
-              power: app.power,
-              active: app.active
-            })),
-            houseDemand: newHouseDemand
-          };
-      
-          // Send update to server
-          this.socket.emit('update_devices', deviceData);
-        }
-      } else if (data && data.devices) {
-        // Update from structured device data
-        this.appliances = this.appliances.map(app => {
-          const device = data.devices.find(d => d.id === app.id);
-          if (device) {
-            return { ...app, active: device.active };
-          }
-          return app;
-        });
-    
-        // Update house demand if provided
-        if (data.newDemand !== undefined) {
-          this.houseDemand = data.newDemand;
-        }
       }
     },
 
@@ -861,234 +645,61 @@ export default {
       this.houseDemand = newDemand;
     },
 
-    // Handler for grid-power-updated event
     updateGridPower(newPower) {
       this.gridPower = newPower;
     },
 
-    handleSpeedChange(speedData) {
-      // Store the new simulation interval
-      this.simulationInterval = speedData.interval;
-
-      const timeScale = speedData.animationSpeed * 30;
-    
-      // If simulation is running, update the server with new interval
-      if (this.simulationRunning && this.socket) {
-        // Tell server about new speed
-        this.socket.emit('set_time_scale', {
-          timeScale: timeScale, // Convert animation speed to timeScale
-          animationSpeed: speedData.animationSpeed 
-        });
-        
-        // If autoplay is active, reset it with new interval
-        if (this.autoPlayActive) {
-          clearInterval(this.autoPlayTimer);
-          this.autoPlayTimer = setInterval(() => {
-            this.nextStep();
-          }, speedData.interval);
-        }
-      }
-    },
-    
     handleConfigUpdated(configData) {
-      // Update the appliances from the config
-      if (configData.appliances) {
-        this.appliances = configData.appliances.map(app => ({
-          id: app.id,
-          name: app.name,
-          type: app.type || 'other',
-          power: parseFloat(app.power || app.defaultPower) || 0,
-          defaultPower: parseFloat(app.defaultPower) || 0,
-          active: Boolean(app.active),
-          group: app.group || 3
-        }));
-        console.log("Updated appliances from config:", this.appliances);
-      }
-
-      // Reset simulation state to ensure proper recalculation
-      this.simulationRunning = false;
-      this.simulationState = 'idle';
-      this.batteryStatus = 'empty';
-      this.solarOutput = 0;
-      this.gridPower = 0;
-      this.houseDemand = 0;
+      console.log('Config updated', configData);
     },
 
-    updateSimulationFromRl(rlPrediction) {
-      if (!rlPrediction || rlPrediction.error) {
-        console.warn("Invalid RL prediction:", rlPrediction?.error || "Missing data");
-        return;
+    handleSpeedChange(speedData) {
+      console.log('Speed changed', speedData);
+      // Update simulation timer interval
+      if (this.simulationTimer && this.simulationRunning) {
+        clearInterval(this.simulationTimer);
+        const newInterval = speedData.interval || 2000;
+        this.simulationTimer = setInterval(() => {
+          this.updateSimulation();
+        }, newInterval);
       }
+    },
 
-      // Validate the RL prediction data structure
-      if (!rlPrediction.appliances || !rlPrediction.environment || 
-          !rlPrediction.battery || !rlPrediction.energy_flow) {
-        console.error("Invalid RL prediction data structure:", rlPrediction);
-        return;
-      }
-      
-      // Update appliance states
-      this.appliances = this.appliances.map(app => {
-        let isActive = app.active; // Default to current state
-        let power = app.power;
-      
-        try {
-          // Match appliance type to determine new active state from RL prediction
-          if (app.type === 'hvac' && rlPrediction.appliances?.controllable?.hvac) {
-            isActive = rlPrediction.appliances.controllable.hvac.active;
-            power = rlPrediction.appliances.controllable.hvac.power;
-          } else if (app.type === 'water_heater' && rlPrediction.appliances?.controllable?.water_heater) {
-            isActive = rlPrediction.appliances.controllable.water_heater.active;
-            power = rlPrediction.appliances.controllable.water_heater.power;
-          } else if (app.type === 'ev_charger' && rlPrediction.ev) {
-            isActive = rlPrediction.ev.power > 0;
-            power = rlPrediction.ev.power;
-          } else if (app.type === 'dishwasher' && rlPrediction.appliances?.shiftable?.dishwasher) {
-            isActive = rlPrediction.appliances.shiftable.dishwasher.active;
-            power = rlPrediction.appliances.shiftable.dishwasher.power;
-          } else if (app.type === 'wash_machine' && rlPrediction.appliances?.shiftable?.wash_machine) {
-            isActive = rlPrediction.appliances.shiftable.wash_machine.active;
-            power = rlPrediction.appliances.shiftable.wash_machine.power;
-          } else if (app.type === 'clothes_dryer' && rlPrediction.appliances?.shiftable?.clothes_dryer) {
-            isActive = rlPrediction.appliances.shiftable.clothes_dryer.active;
-            power = rlPrediction.appliances.shiftable.clothes_dryer.power;
-          } else if (app.type === 'tv' && rlPrediction.appliances?.fixed?.tv) {
-            isActive = rlPrediction.appliances.fixed.tv.active;
-            power = rlPrediction.appliances.fixed.tv.power;
-          } else if (app.type === 'refrigerator' && rlPrediction.appliances?.fixed?.refrigerator) {
-            isActive = rlPrediction.appliances.fixed.refrigerator.active;
-            power = rlPrediction.appliances.fixed.refrigerator.power;
-          } else if (app.type === 'lights' && rlPrediction.appliances?.fixed?.lights) {
-            isActive = rlPrediction.appliances.fixed.lights.active;
-            power = rlPrediction.appliances.fixed.lights.power;
-          } else if (app.type === 'vacuum' && rlPrediction.appliances?.fixed?.vacuum) {
-            isActive = rlPrediction.appliances.fixed.vacuum.active;
-            power = rlPrediction.appliances.fixed.vacuum.power;
-          } else if (app.type === 'hair_dryer' && rlPrediction.appliances?.fixed?.hair_dryer) {
-            isActive = rlPrediction.appliances.fixed.hair_dryer.active;
-            power = rlPrediction.appliances.fixed.hair_dryer.power;
-          }
-        } catch (error) {
-          console.error(`Error updating ${app.name}:`, error);
-        }
-
-        return {
-          ...app,
-          active: isActive,
-          power: power
-        };
-      });
-    
-      // Update power values
-      this.solarOutput = rlPrediction.environment?.solar_production || 0;
-      this.gridPower = rlPrediction.energy_flow?.grid?.net_power || 0;
-      this.houseDemand = rlPrediction.energy_flow?.house?.demand?.total || 0;
-      this.batteryLevel = (rlPrediction.battery?.soc || 0) * 100; // Convert to percentage
-      this.batteryPower = rlPrediction.battery?.power || 0;
-    
-      // Update battery status
-      if (rlPrediction.battery?.power > 0) {
-        this.batteryStatus = 'charging';
-      } else if (rlPrediction.battery?.power < 0) {
-        this.batteryStatus = 'discharging';
-      } else {
-        this.batteryStatus = 'empty';
-      }
+    handleBatteryCritical() {
+      console.log('Battery critical');
     },
 
     onHistoryUpdated(data) {
-      // Ensure our parent component knows when history has been updated
-      console.log(`History updated for timeStep ${data.timeStep}`);
-  
-      // This is optional, but helps ensure parent-child sync
-      if (data.timeStep === this.currentTimeStep) {
-        if (data.homeTemp !== null) {
-          this.homeTemperatureHistory[data.timeStep] = data.homeTemp;
-        }
-        if (data.waterTemp !== null) {
-          this.waterTemperatureHistory[data.timeStep] = data.waterTemp;
-        }
-        // Don't need to update appliance history as it's passed by reference
+      console.log('History updated', data);
+    },
+
+    handleHourlyDataUpdate(data) {
+      console.log('Hourly data update', data);
+    },
+
+    handleSimulationComplete() {
+      console.log('Simulation complete');
+      this.simulationCompleted = true;
+    },
+
+    handleEnergyModelsUpdate(data) {
+      this.energyModelState = { ...this.energyModelState, ...data };
+    },
+
+    handleAppliancePowerUpdate(data) {
+      const appIndex = this.appliances.findIndex(app => app.id === data.id);
+      if (appIndex !== -1) {
+        this.appliances[appIndex].power = data.power;
       }
     },
-    
-    updateHistoryData(data) {
-      if (!data) return;
 
-      try {
-        const timeStep = data.timestamp;
-        
-        // Update temperature histories
-        if (timeStep >= 0 && timeStep < 96) {
-          // Create new arrays to ensure reactivity
-          const newHomeHistory = [...this.homeTemperatureHistory];
-          const newWaterHistory = [...this.waterTemperatureHistory];
-          const newApplianceHistory = JSON.parse(JSON.stringify(this.appliancePowerHistory));
-      
-          // Update home temperature
-          const homeTemp = data.temperatures?.home?.current || null;
-          newHomeHistory[timeStep] = homeTemp;
-      
-          // Update water temperature
-          const waterTemp = data.temperatures?.water?.current || null;
-          newWaterHistory[timeStep] = waterTemp;
-      
-          const washMachine = data.appliances.shiftable.wash_machine;
-          const washingCompleted = washMachine.progress >= washMachine.total_duration;
-          const clothesDryer = data.appliances.shiftable.clothes_dryer;
-
-          // Update appliance power histories
-          if (data.appliances && data.appliances.shiftable) {
-
-            for (const appKey in data.appliances.shiftable) {
-              if (newApplianceHistory[appKey]) {
-                const app = data.appliances.shiftable[appKey];
-                let power = 0;
-
-                if (appKey === 'clothes_dryer') {
-                  power = (app.progress < app.total_duration && washingCompleted) ? app.power : 0;
-                } else {
-                  power = app.active && app.progress < app.total_duration ? app.power : 0;
-                }
-
-                newApplianceHistory[appKey][timeStep] = power;
-              }
-            }
-          }
-
-          // Force update to make sure arrays are reactive
-          this.homeTemperatureHistory = newHomeHistory;
-          this.waterTemperatureHistory = newWaterHistory;
-          this.appliancePowerHistory = newApplianceHistory;
-        }
-      } catch (err) {
-        console.error('Error in updateHistoryData:', err);
-      }
-    },
-    
-    formatTime(timeStep) {
-      // Add 8 hours (32 quarters) to start from 8:00 AM
-      const adjustedStep = (timeStep + 32) % 96;
-      // Each time step is 15 minutes
-      const minutes = (adjustedStep % 4) * 15;
-      const hours = Math.floor(adjustedStep / 4);
-      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-    },
-
+    // AI/RL Methods
     previousStep() {
       if (this.canGoBack && !this.autoPlayActive) {
-        // Store current state before changing
-        const prevDay = this.currentDay;
-        const prevStep = this.currentTimeStep;
-
         this.currentTimeStep = (this.currentTimeStep - 1 + 96) % 96;
         if (this.currentTimeStep === 95) {
           this.currentDay = Math.max(1, this.currentDay - 1);
         }
-
-        // Log for debugging
-        console.log(`Time step changed: ${prevDay}:${prevStep} -> ${this.currentDay}:${this.currentTimeStep}`);
-
         this.requestRlPrediction();
       }
     },
@@ -1096,287 +707,294 @@ export default {
     nextStep() {
       if (this.autoPlayActive) return;
       
-      // Store current state before changing
-      const prevDay = this.currentDay;
-      const prevStep = this.currentTimeStep;
-
-      // Update step consistently
       this.currentTimeStep = (this.currentTimeStep + 1) % 96;
       if (this.currentTimeStep === 0) {
         this.currentDay = Math.min(60, this.currentDay + 1);
       }
-
-      // Log for debugging
-      console.log(`Time step changed: ${prevDay}:${prevStep} -> ${this.currentDay}:${this.currentTimeStep}`);
-
       this.requestRlPrediction();
     },
 
     toggleAutoplay() {
-      // Stop any existing timer first
       if (this.autoPlayTimer) {
         clearInterval(this.autoPlayTimer);
         this.autoPlayTimer = null;
       }
-  
-      // Toggle state
+      
       this.autoPlayActive = !this.autoPlayActive;
-  
+      
       if (this.autoPlayActive) {
-        // Change to AI mode
         this.simulationState = 'ai';
-    
-        // Tell server to start AI mode
-        if (this.socket) {
-          this.socket.emit('set_simulation_mode', { 
-            mode: 'ai',
-            interval: this.simulationInterval
-          });
-        }
-    
-        // Start the timer with a simple implementation
         this.autoPlayTimer = setInterval(() => {
-          // Simple direct state update
           this.currentTimeStep = (this.currentTimeStep + 1) % 96;
           if (this.currentTimeStep === 0) {
             this.currentDay = Math.min(60, this.currentDay + 1);
           }
-      
-          // Request new prediction after state update
           this.requestRlPrediction();
-
-          if (this.currentTimeStep % 10 === 0) {
-            this.optimizeMemoryUsage();
-          }
-        }, this.simulationInterval);
+        }, 1500);
       } else {
-        // Stop autoplay
-        if (this.socket) {
-          this.socket.emit('set_simulation_mode', { mode: 'none' });
-        }
+        this.simulationState = 'manual';
       }
     },
-    
+
     requestRlPrediction() {
-      // Emit a socket event to request updated RL prediction for current time step
-      if (this.socket) {
-        try {
-          // Change to AI mode
-          this.simulationState = 'ai';
-
-          // Log current state for debugging
-          console.log(`Requesting RL prediction for day ${this.currentDay}, step ${this.currentTimeStep}`);
-
-          // Add a timeout to prevent hanging
-          const requestTimeout = setTimeout(() => {
-            console.warn('RL prediction request timed out');
-          }, 5000);
-
-          // Set default initial values
-          if (!this.rlPrediction) {
-            const initialRequest = {
-              day: this.currentDay,
-              timeStep: this.currentTimeStep,
-              shift_prog: [0, 0, 0],
-              time_to_start_shift: [0, 0, 0],
-              home_temp: 4.0,  // 4°C above setpoint
-              water_temp: -5.0,  // 5°C below setpoint
-              soc_ess: 0.0,
-              soc_ev: 0.0,
-              time_to_start_noctrl: [0, 0, 0, 0, 0]
-            };
-
-            this.socket.emit('request_rl_prediction', initialRequest);
-            return;
+      // Generate mock RL prediction for AI demo mode
+      const hourIndex = Math.floor(this.currentTimeStep / 4) % 24;
+      const currentHourData = this.hourlyData[hourIndex];
+      
+      // Smart AI decisions based on time and conditions
+      const hour = parseInt(currentHourData.hour.split(':')[0]);
+      const isHighPriceTime = currentHourData.price > 0.035;
+      const isSolarActive = currentHourData.solar > 1;
+      
+      // AI optimizes appliance scheduling
+      const aiAppliances = {
+        controllable: {
+          hvac: {
+            // Turn on HVAC during hot hours but consider price
+            active: (hour >= 13 && hour <= 16 && currentHourData.temperature > 25) || 
+                   (hour >= 20 && hour <= 22 && currentHourData.temperature > 22),
+            power: 2.5
+          },
+          water_heater: {
+            // Heat water during low price periods
+            active: (!isHighPriceTime && (hour === 2 || hour === 11 || hour === 21)) ||
+                   (this.energyModelState.waterTemperature < 50),
+            power: 4.5
           }
-          
-          const requestData = {
-            day: this.currentDay,
-            timeStep: this.currentTimeStep,
-            
-            // Appliance progress state
-            shift_prog: [
-              this.rlPrediction?.appliances?.shiftable?.dishwasher?.progress || 0,
-              this.rlPrediction?.appliances?.shiftable?.wash_machine?.progress || 0,
-              this.rlPrediction?.appliances?.shiftable?.clothes_dryer?.progress || 0
-            ],
-            
-            // Time to start flags for appliances
-            time_to_start_shift: [
-              this.rlPrediction?.appliances?.shiftable?.dishwasher?.active ? 1 : 0,
-              this.rlPrediction?.appliances?.shiftable?.wash_machine?.active ? 1 : 0,
-              this.rlPrediction?.appliances?.shiftable?.clothes_dryer?.active ? 1 : 0
-            ],
-            
-            // IMPORTANT: Convert absolute temperatures to differences from setpoints
-            home_temp: (this.rlPrediction?.temperatures?.home?.current || 26) - 
-                      (this.rlPrediction?.temperatures?.home?.setpoint || 22),
-                      
-            water_temp: (this.rlPrediction?.temperatures?.water?.current || 55) - 
-                       (this.rlPrediction?.temperatures?.water?.setpoint || 60),
-            
-            // Battery and EV state
-            soc_ess: this.rlPrediction?.battery?.soc || 0.0,
-            soc_ev: this.rlPrediction?.ev?.soc || 0.0,
-            
-            // Fixed appliance state
-            time_to_start_noctrl: [
-              this.rlPrediction?.appliances?.fixed?.tv?.active ? 1 : 0,
-              this.rlPrediction?.appliances?.fixed?.refrigerator?.active ? 1 : 0,
-              this.rlPrediction?.appliances?.fixed?.lights?.active ? 1 : 0,
-              this.rlPrediction?.appliances?.fixed?.vacuum?.active ? 1 : 0,
-              this.rlPrediction?.appliances?.fixed?.hair_dryer?.active ? 1 : 0
-            ]
-          };
-
-          this.socket.emit('request_rl_prediction', requestData);
-
-          // Clear the timeout when socket response is received
-          this.socket.once('rl_prediction', () => {
-            clearTimeout(requestTimeout);
-          });
-        } catch (error) {
-          console.error('Error requesting RL prediction:', error);
+        },
+        shiftable: {
+          dishwasher: {
+            // Run during low price hours
+            active: !isHighPriceTime && hour >= 20 && hour <= 22,
+            power: 1.8,
+            progress: Math.min(3, Math.max(0, this.currentTimeStep - 80)),
+            total_duration: 3
+          },
+          wash_machine: {
+            // Run during solar peak hours
+            active: isSolarActive && hour >= 11 && hour <= 14,
+            power: 0.4,
+            progress: Math.min(6, Math.max(0, this.currentTimeStep - 44)),
+            total_duration: 6
+          },
+          clothes_dryer: {
+            // Run after washing machine completes during solar hours
+            active: isSolarActive && hour >= 14 && hour <= 16,
+            power: 1.2,
+            progress: Math.min(5, Math.max(0, this.currentTimeStep - 56)),
+            total_duration: 5
+          }
+        },
+        fixed: {
+          tv: { 
+            active: hour >= 18 && hour <= 23, 
+            power: 0.1 
+          },
+          refrigerator: { 
+            active: true, 
+            power: 0.2 
+          },
+          lights: { 
+            active: (hour >= 18 && hour <= 23) || (hour >= 6 && hour <= 8), 
+            power: 0.2 
+          },
+          vacuum: { 
+            active: hour === 10 && this.currentTimeStep % 8 < 2, 
+            power: 1.2 
+          },
+          hair_dryer: { 
+            active: hour === 7 && this.currentTimeStep % 4 === 1, 
+            power: 1.0 
+          }
         }
+      };
+
+      // Calculate total demand from AI decisions
+      let totalDemand = 0;
+      Object.values(aiAppliances.controllable).forEach(app => {
+        if (app.active) totalDemand += app.power;
+      });
+      Object.values(aiAppliances.shiftable).forEach(app => {
+        if (app.active) totalDemand += app.power;
+      });
+      Object.values(aiAppliances.fixed).forEach(app => {
+        if (app.active) totalDemand += app.power;
+      });
+
+      // AI battery management
+      const aiTargetBatteryLevel = isHighPriceTime ? 
+        Math.max(20, this.batteryLevel - 3) : 
+        Math.min(95, this.batteryLevel + (isSolarActive ? 5 : 1));
+
+      const aiBatteryPower = isHighPriceTime && this.batteryLevel > 15 ? 
+        -Math.min(2.4, totalDemand * 0.6) : 
+        (isSolarActive && this.batteryLevel < 90 ? Math.min(2.4, currentHourData.solar * 0.7) : 0);
+
+      // Update temperature models based on AI decisions
+      const targetIndoorTemp = 22;
+      if (aiAppliances.controllable.hvac.active) {
+        this.energyModelState.indoorTemperature += (targetIndoorTemp - this.energyModelState.indoorTemperature) * 0.4;
       } else {
-        console.warn('Socket not available for RL prediction request');
+        this.energyModelState.indoorTemperature += (currentHourData.temperature - this.energyModelState.indoorTemperature) * 0.1;
       }
-    },
 
-    showTimeLimitNotification(data) {
-      // For simplicity, using alert, but you can replace with a more elegant UI notification
-      const hours = Math.floor(data.timeLimit / 60);
-      const minutes = Math.floor(data.timeLimit % 60);
-    
-      let timeString = '';
-      if (hours > 0) timeString += `${hours} hour${hours > 1 ? 's' : ''} `;
-      if (minutes > 0) timeString += `${minutes} minute${minutes > 1 ? 's' : ''} `;
-      //if (seconds > 0) timeString += `${seconds} second${seconds > 1 ? 's' : ''}`;
-    
-      //alert(`Simulation complete! Time limit of ${timeString} reached.`);
-      this.showAlert(`Simulation complete! Time limit of ${timeString} reached.`);
-    },
+      if (aiAppliances.controllable.water_heater.active) {
+        this.energyModelState.waterTemperature = Math.min(65, this.energyModelState.waterTemperature + 2);
+      } else {
+        this.energyModelState.waterTemperature = Math.max(45, this.energyModelState.waterTemperature - 0.8);
+      }
 
-    resetChartData() {
-      if (!this.chart || !this.isChartInitialized) return;
+      // EV charging optimization
+      const evShouldCharge = this.energyModelState.evConnected && 
+                           this.energyModelState.evSoC < 0.8 && 
+                           (!isHighPriceTime || isSolarActive);
+
+      if (evShouldCharge) {
+        this.energyModelState.evSoC = Math.min(0.9, this.energyModelState.evSoC + 0.04);
+      }
+
+      // Create comprehensive RL prediction
+      const mockPrediction = {
+        timestamp: this.currentTimeStep,
+        day: this.currentDay,
+        environment: {
+          price: currentHourData.price,
+          solar_production: currentHourData.solar,
+          outside_temp: currentHourData.temperature
+        },
+        temperatures: {
+          home: {
+            current: this.energyModelState.indoorTemperature,
+            setpoint: 22
+          },
+          water: {
+            current: this.energyModelState.waterTemperature,
+            setpoint: 60
+          }
+        },
+        battery: {
+          soc: aiTargetBatteryLevel / 100,
+          power: aiBatteryPower
+        },
+        ev: {
+          soc: this.energyModelState.evSoC,
+          power: evShouldCharge ? 6.0 : 0,
+          connected: this.energyModelState.evConnected
+        },
+        appliances: aiAppliances,
+        energy_flow: {
+          grid: { 
+            net_power: Math.max(0, totalDemand - currentHourData.solar + Math.max(0, aiBatteryPower))
+          },
+          house: { 
+            demand: { total: totalDemand }
+          }
+        }
+      };
+
+      // Update local state with AI decisions
+      this.updateFromAiPrediction(mockPrediction);
       
+      // Update history data
+      if (this.currentTimeStep < 96) {
+        this.homeTemperatureHistory[this.currentTimeStep] = this.energyModelState.indoorTemperature;
+        this.waterTemperatureHistory[this.currentTimeStep] = this.energyModelState.waterTemperature;
+        
+        // Update appliance power history
+        this.appliancePowerHistory.dishwasher[this.currentTimeStep] = 
+          aiAppliances.shiftable.dishwasher.active ? aiAppliances.shiftable.dishwasher.power : 0;
+        this.appliancePowerHistory.wash_machine[this.currentTimeStep] = 
+          aiAppliances.shiftable.wash_machine.active ? aiAppliances.shiftable.wash_machine.power : 0;
+        this.appliancePowerHistory.clothes_dryer[this.currentTimeStep] = 
+          aiAppliances.shiftable.clothes_dryer.active ? aiAppliances.shiftable.clothes_dryer.power : 0;
+      }
+      
+      this.rlPrediction = mockPrediction;
+    },
+
+    updateFromAiPrediction(prediction) {
+      if (!prediction) return;
+
       try {
-        // Reset data cache
-        this.dataCache = {};
-        
-        // Create empty datasets for each appliance
-        for (const appKey in this.shiftableAppliances) {
-          this.dataCache[appKey] = new Array(this.maxDataPoints).fill(0);
+        // Update energy values
+        this.solarOutput = prediction.environment.solar_production;
+        this.batteryLevel = prediction.battery.soc * 100;
+        this.batteryPower = prediction.battery.power;
+        this.gridPower = prediction.energy_flow.grid.net_power;
+        this.houseDemand = prediction.energy_flow.house.demand.total;
+
+        // Update battery status
+        if (prediction.battery.power > 0.1) {
+          this.batteryStatus = 'charging';
+        } else if (prediction.battery.power < -0.1) {
+          this.batteryStatus = 'discharging';
+        } else {
+          this.batteryStatus = 'empty';
         }
-        
-        // Update chart datasets
-        if (this.chart.data && this.chart.data.datasets) {
-          let i = 0;
-          for (const appKey in this.shiftableAppliances) {
-            if (i < this.chart.data.datasets.length) {
-              this.chart.data.datasets[i].data = [...this.dataCache[appKey]];
-              i++;
-            }
+
+        // Update appliance states based on AI predictions
+        this.appliances = this.appliances.map(app => {
+          let isActive = app.active;
+          let power = app.power;
+
+          // Map AI decisions to appliances
+          if (app.type === 'hvac' && prediction.appliances?.controllable?.hvac) {
+            isActive = prediction.appliances.controllable.hvac.active;
+            power = prediction.appliances.controllable.hvac.power;
+          } else if (app.type === 'water_heater' && prediction.appliances?.controllable?.water_heater) {
+            isActive = prediction.appliances.controllable.water_heater.active;
+            power = prediction.appliances.controllable.water_heater.power;
+          } else if (app.type === 'ev_charger') {
+            isActive = prediction.ev.power > 0;
+            power = prediction.ev.power;
+          } else if (app.type === 'dishwasher' && prediction.appliances?.shiftable?.dishwasher) {
+            isActive = prediction.appliances.shiftable.dishwasher.active;
+            power = prediction.appliances.shiftable.dishwasher.power;
+          } else if (app.type === 'wash_machine' && prediction.appliances?.shiftable?.wash_machine) {
+            isActive = prediction.appliances.shiftable.wash_machine.active;
+            power = prediction.appliances.shiftable.wash_machine.power;
+          } else if (app.type === 'clothes_dryer' && prediction.appliances?.shiftable?.clothes_dryer) {
+            isActive = prediction.appliances.shiftable.clothes_dryer.active;
+            power = prediction.appliances.shiftable.clothes_dryer.power;
+          } else if (app.type === 'tv' && prediction.appliances?.fixed?.tv) {
+            isActive = prediction.appliances.fixed.tv.active;
+            power = prediction.appliances.fixed.tv.power;
+          } else if (app.type === 'refrigerator' && prediction.appliances?.fixed?.refrigerator) {
+            isActive = prediction.appliances.fixed.refrigerator.active;
+            power = prediction.appliances.fixed.refrigerator.power;
+          } else if (app.type === 'lights' && prediction.appliances?.fixed?.lights) {
+            isActive = prediction.appliances.fixed.lights.active;
+            power = prediction.appliances.fixed.lights.power;
+          } else if (app.type === 'vacuum' && prediction.appliances?.fixed?.vacuum) {
+            isActive = prediction.appliances.fixed.vacuum.active;
+            power = prediction.appliances.fixed.vacuum.power;
+          } else if (app.type === 'hair_dryer' && prediction.appliances?.fixed?.hair_dryer) {
+            isActive = prediction.appliances.fixed.hair_dryer.active;
+            power = prediction.appliances.fixed.hair_dryer.power;
           }
-          
-          // Update chart without animation
-          this.chart.update('none');
-        }
+
+          return {
+            ...app,
+            active: isActive,
+            power: power
+          };
+        });
+
       } catch (error) {
-        console.warn('Error resetting appliance chart data:', error.message);
+        console.error('Error updating from AI prediction:', error);
       }
-    },
-  },
-
-  watch: {
-    // Add a watcher to detect changes to simulationState
-    simulationState(newState, oldState) {
-      //console.log(`Simulation state changed from ${oldState} to ${newState}`);
-      
-      // Always keep RL controls visible regardless of state
-      this.showRlControls = true;
-    },
-
-    timeStep(newValue) {
-      // Special case: if timeStep is reset to 0, we might be doing a full reset
-      if (newValue === 0) {
-        // Check if we need to reset - look at the power history
-        let needsReset = true;
-        for (const appKey in this.powerHistory) {
-          // If any appliance has non-zero data, don't reset
-          if (this.powerHistory[appKey].some(v => v > 0)) {
-            needsReset = false;
-            break;
-          }
-        }
-        
-        if (needsReset) {
-          this.resetChartData();
-        }
-      }
-      
-      this.updateChart();
     }
   },
 
-  computed: {
-    canGoBack() {
-      // Can only go back if not at the beginning of day 1
-      return !(this.currentDay === 1 && this.currentTimeStep === 0);
-    },
-
-    showStartButton() {
-      console.log(`Computing showStartButton: simulationState=${this.simulationState}`);
-      return this.simulationState === 'idle';
-    },
-    showPauseButton() {
-      console.log(`Computing showPauseButton: isRunning=${this.isRunning}, simulationState=${this.simulationState}`);
-      return this.isRunning && this.simulationState !== 'idle';
-    },
-    showResumeButton() {
-      console.log(`Computing showResumeButton: isRunning=${this.isRunning}, simulationState=${this.simulationState}`);
-      return !this.isRunning && this.simulationState !== 'idle';
-    },
-    showResetButton() {
-      console.log(`Computing showResetButton: simulationState=${this.simulationState}`);
-      return this.simulationState !== 'idle';
-    },
-    formattedTimeStep() {
-      return this.formatTime(this.currentTimeStep);
-    },
-    formattedStepDisplay() {
-      return `${this.currentTimeStep + 1}/96`;
-    }
-  },
-  
   beforeUnmount() {
-    // Clean up chart manager completely
-    if (window.ChartManager) {
-      // Reset all charts
-      window.ChartManager.resetAllCharts();
+    if (this.simulationTimer) {
+      clearInterval(this.simulationTimer);
     }
-
-    // Clean up any timers when component is destroyed
     if (this.autoPlayTimer) {
       clearInterval(this.autoPlayTimer);
-      this.autoPlayTimer = null;
     }
-    
-    // Disconnect socket
-    if (this.socket) {
-      this.socket.removeAllListeners();
-      this.socket.disconnect();
-      this.socket = null;
-    }
-
-    // Clear any large data structures
-    this.rlPrediction = null;
-    this.homeTemperatureHistory = null;
-    this.waterTemperatureHistory = null;
-    this.appliancePowerHistory = null;
   }
 };
-
 </script>
 
 <style scoped>
@@ -1581,388 +1199,8 @@ header h1 {
   font-weight: 500;
 }
 
-/* Energy Flow Diagram Styles */
-.energy-flow-container {
-  width: 100%;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-}
-
-.controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-  gap: 15px;
-}
-
-.config-controls {
-  display: flex;
-  gap: 15px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.simulation-time-input {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.simulation-time-input input {
-  width: 80px;
-  padding: 8px 12px;
-  border: 2px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 0.9rem;
-}
-
-.config-btn {
-  background: linear-gradient(45deg, #8b5cf6, #7c3aed);
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.control-buttons {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  flex-wrap: wrap;
-}
-
-.start-btn, .resume-btn {
-  background: linear-gradient(45deg, #10b981, #059669);
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.pause-btn {
-  background: linear-gradient(45deg, #ef4444, #dc2626);
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.reset-btn {
-  background: linear-gradient(45deg, #6b7280, #4b5563);
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.speed-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.speed-control select {
-  padding: 8px 12px;
-  border: 2px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 0.9rem;
-}
-
-.simulation-time-display {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 15px 0;
-  padding: 15px 20px;
-  background: linear-gradient(45deg, #f3f4f6, #e5e7eb);
-  border-radius: 10px;
-  font-weight: bold;
-  border-left: 5px solid #3b82f6;
-}
-
-.time-icon {
-  font-size: 1.5rem;
-}
-
-.time-value {
-  font-size: 1.8rem;
-  color: #1f2937;
-}
-
-.time-day {
-  font-size: 14px;
-  color: #6b7280;
-  padding: 4px 12px;
-  background: #e5e7eb;
-  border-radius: 15px;
-}
-
-.diagram {
-  width: 100%;
-  height: 400px;
-  background: #f8fafc;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 2px solid #e2e8f0;
-}
-
-.device-icon {
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.device-icon.active {
-  filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.5));
-}
-
-.device-icon.solar.active {
-  filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.5));
-}
-
-.device-icon.battery.active {
-  filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.5));
-}
-
-.device-icon.grid.active {
-  filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.5));
-}
-
-.device-label {
-  font-size: 14px;
-  font-weight: bold;
-  fill: #374151;
-}
-
-.device-value {
-  font-size: 12px;
-  font-weight: bold;
-  fill: #1f2937;
-}
-
-.flow-line {
-  stroke-dasharray: 10,5;
-  filter: drop-shadow(0 0 3px rgba(0,0,0,0.3));
-}
-
-.appliances {
-  margin-top: 20px;
-}
-
-.appliance-group {
-  margin-bottom: 25px;
-}
-
-.appliance-group h4 {
-  margin: 0 0 15px 0;
-  color: #374151;
-  font-size: 1.1rem;
-  font-weight: 600;
-  padding: 10px 15px;
-  background: #f8fafc;
-  border-radius: 8px;
-  border-left: 4px solid #3b82f6;
-}
-
-.appliances-group {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 15px;
-}
-
-.appliance-card {
-  background: #f8fafc;
-  border-radius: 10px;
-  padding: 15px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
-  position: relative;
-  overflow: hidden;
-}
-
-.appliance-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: #e2e8f0;
-  transition: all 0.3s ease;
-}
-
-.appliance-card.group-1::before {
-  background: #f43f5e;
-}
-
-.appliance-card.group-2::before {
-  background: #10b981;
-}
-
-.appliance-card.group-3::before {
-  background: #3b82f6;
-}
-
-.appliance-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-}
-
-.appliance-card.active {
-  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-  border-color: #3b82f6;
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
-}
-
-.appliance-card.group-1.active {
-  background: linear-gradient(135deg, #fce7f3, #fbcfe8);
-  border-color: #f43f5e;
-  box-shadow: 0 8px 25px rgba(244, 63, 94, 0.2);
-}
-
-.appliance-card.group-2.active {
-  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-  border-color: #10b981;
-  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.2);
-}
-
-.appliance-icon {
-  font-size: 2.5rem;
-  margin-bottom: 8px;
-  display: block;
-}
-
-.appliance-name {
-  font-weight: 600;
-  color: #2d3748;
-  margin-bottom: 5px;
-  font-size: 0.95rem;
-}
-
-.appliance-power {
-  color: #6b7280;
-  font-size: 0.85rem;
-  font-weight: 500;
-  margin-bottom: 8px;
-}
-
-.appliance-status {
-  font-size: 0.75rem;
-  padding: 4px 12px;
-  border-radius: 15px;
-  font-weight: 600;
-  text-transform: uppercase;
-  display: inline-block;
-}
-
-.appliance-status.on {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.appliance-status.off {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.energy-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 15px;
-  margin-top: 25px;
-}
-
-.stat-card {
-  padding: 20px;
-  border-radius: 12px;
-  border-left: 5px solid;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  opacity: 0.1;
-  background: linear-gradient(135deg, transparent 0%, currentColor 100%);
-  pointer-events: none;
-}
-
-.stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-}
-
-.stat-card.solar {
-  border-left-color: #f59e0b;
-  background: linear-gradient(135deg, #fffbeb, #fef3c7);
-  color: #f59e0b;
-}
-
-.stat-card.battery {
-  border-left-color: #10b981;
-  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-  color: #10b981;
-}
-
-.stat-card.grid {
-  border-left-color: #8b5cf6;
-  background: linear-gradient(135deg, #f5f3ff, #e7d3ff);
-  color: #8b5cf6;
-}
-
-.stat-card.home {
-  border-left-color: #3b82f6;
-  background: linear-gradient(135deg, #eff6ff, #dbeafe);
-  color: #3b82f6;
-}
-
-.stat-title {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #6b7280;
-  margin-bottom: 8px;
-  position: relative;
-  z-index: 1;
-}
-
-.stat-value {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1f2937;
-  position: relative;
-  z-index: 1;
-}
-
 /* Responsive Design */
 @media (max-width: 1024px) {
-  .controls {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
   .rl-simulation-info {
     flex-direction: column;
   }
@@ -1987,14 +1225,6 @@ header h1 {
     font-size: 1.8rem;
   }
   
-  .appliances-group {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  }
-  
-  .energy-stats {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  }
-  
   .rl-step-buttons {
     flex-direction: column;
     width: 100%;
@@ -2002,20 +1232,6 @@ header h1 {
   
   .rl-btn {
     width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .appliances-group {
-    grid-template-columns: 1fr 1fr;
-  }
-  
-  .energy-stats {
-    grid-template-columns: 1fr;
-  }
-  
-  .stat-value {
-    font-size: 1.5rem;
   }
 }
 </style>
