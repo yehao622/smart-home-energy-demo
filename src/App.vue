@@ -352,10 +352,15 @@ export default {
       this.updateEnergyFlows(currentHourData);
 
       // Auto-toggle some appliances for realistic demo
-      this.autoToggleAppliances(hours, currentStep);
+      if (this.simulationSteps % 8 === 0) { // Every 2 hours
+        this.autoToggleAppliances(hours, currentStep);
+      }
 
       // Update energy models
       this.updateEnergyModels(currentHourData);
+
+      // Force notify components about energy model changes
+      this.$emit('energy-models-updated', this.energyModelState);
 
       // Notify components with mock simulation update
       if (this.mockCallbacks && this.mockCallbacks.simulation_update) {
@@ -444,10 +449,12 @@ export default {
       const hvacActive = this.appliances.find(app => app.type === 'hvac')?.active || false;
       
       if (hvacActive) {
-        this.energyModelState.indoorTemperature += (targetTemp - this.energyModelState.indoorTemperature) * 0.3;
+        const tempDiff = targetTemp - this.energyModelState.indoorTemperature;
+        this.energyModelState.indoorTemperature += tempDiff * 0.8; 
       } else {
         // Drift toward outdoor temperature
-        this.energyModelState.indoorTemperature += (hourData.temperature - this.energyModelState.indoorTemperature) * 0.1;
+        const tempDiff = hourData.temperature - this.energyModelState.indoorTemperature;
+        this.energyModelState.indoorTemperature += tempDiff * 0.3;
       }
 
       // Water heater model
@@ -455,10 +462,12 @@ export default {
       const targetWaterTemp = 60;
       
       if (waterHeaterActive) {
-        this.energyModelState.waterTemperature += (targetWaterTemp - this.energyModelState.waterTemperature) * 0.4;
+         const tempDiff = targetWaterTemp - this.energyModelState.waterTemperature;
+         this.energyModelState.waterTemperature += tempDiff * 0.6;
       } else {
         // Natural cooling
-        this.energyModelState.waterTemperature = Math.max(45, this.energyModelState.waterTemperature - 0.5);
+        this.energyModelState.waterTemperature = Math.max(45, 
+          this.energyModelState.waterTemperature - 1.5);
       }
 
       // EV model
@@ -476,54 +485,46 @@ export default {
     },
 
     autoToggleAppliances(hour, step) {
-      // Smart automation patterns for demo
+      // More frequent and visible changes
       
-      // Morning routine
-      if (hour === 7 && step % 4 === 0) {
+      // Water heater cycles more often
+      if ((hour === 7 || hour === 12 || hour === 19 || hour === 22) && step % 4 === 0) {
         const waterHeater = this.appliances.find(app => app.type === 'water_heater');
-        if (waterHeater && !waterHeater.active) {
+        if (waterHeater && this.energyModelState.waterTemperature < 55) {
+          if (!waterHeater.active) this.toggleAppliance(waterHeater.id);
+        } else if (waterHeater && waterHeater.active && this.energyModelState.waterTemperature > 62) {
           this.toggleAppliance(waterHeater.id);
         }
       }
 
-      // Hot afternoon - turn on HVAC
-      if (hour === 14 && step % 4 === 0) {
+      // HVAC responds to temperature
+      if (step % 6 === 0) {
         const hvac = this.appliances.find(app => app.type === 'hvac');
-        if (hvac && !hvac.active) {
-          this.toggleAppliance(hvac.id);
+        if (hvac) {
+          const shouldBeOn = this.energyModelState.indoorTemperature > 24 || 
+                            this.energyModelState.indoorTemperature < 20;
+          if (shouldBeOn && !hvac.active) {
+            this.toggleAppliance(hvac.id);
+          } else if (!shouldBeOn && hvac.active) {
+            this.toggleAppliance(hvac.id);
+          }
         }
       }
 
-      // Evening routine
+      // Other appliances cycle every few hours
       if (hour === 18 && step % 4 === 0) {
         const lights = this.appliances.find(app => app.type === 'lights');
-        if (lights && !lights.active) {
-          this.toggleAppliance(lights.id);
-        }
+        if (lights && !lights.active) this.toggleAppliance(lights.id);
       }
 
-      // Start EV charging at low price hours
-      if ((hour === 0 || hour === 12) && this.energyModelState.evConnected && step % 4 === 0) {
-        const evCharger = this.appliances.find(app => app.type === 'ev_charger');
-        if (evCharger && !evCharger.active && this.energyModelState.evSoC < 0.8) {
-          this.toggleAppliance(evCharger.id);
-        }
-      }
-
-      // Evening dishwasher
       if (hour === 19 && step % 4 === 0) {
         const dishwasher = this.appliances.find(app => app.type === 'dishwasher');
-        if (dishwasher && !dishwasher.active) {
-          this.toggleAppliance(dishwasher.id);
-        }
+        if (dishwasher && !dishwasher.active) this.toggleAppliance(dishwasher.id);
       }
 
-      // Turn off lights at night
       if (hour === 23 && step % 4 === 0) {
         const lights = this.appliances.find(app => app.type === 'lights');
-        if (lights && lights.active) {
-          this.toggleAppliance(lights.id);
-        }
+        if (lights && lights.active) this.toggleAppliance(lights.id);
       }
     },
 
@@ -765,9 +766,10 @@ export default {
         shiftable: {
           dishwasher: {
             // Run during low price hours
-            active: !isHighPriceTime && hour >= 20 && hour <= 22,
+            active: (!isHighPriceTime && hour >= 19 && hour <= 21) || 
+              (this.currentTimeStep >= 76 && this.currentTimeStep <= 84),
             power: 1.8,
-            progress: Math.min(3, Math.max(0, this.currentTimeStep - 80)),
+            progress: Math.min(3, Math.max(0, this.currentTimeStep - 76)),
             total_duration: 3
           },
           wash_machine: {
@@ -833,15 +835,28 @@ export default {
       // Update temperature models based on AI decisions
       const targetIndoorTemp = 22;
       if (aiAppliances.controllable.hvac.active) {
-        this.energyModelState.indoorTemperature += (targetIndoorTemp - this.energyModelState.indoorTemperature) * 0.4;
+        const tempDiff = targetIndoorTemp - this.energyModelState.indoorTemperature;
+        this.energyModelState.indoorTemperature += tempDiff * 0.7;
+        // Clamp to reasonable bounds
+        this.energyModelState.indoorTemperature = Math.max(18, 
+          Math.min(28, this.energyModelState.indoorTemperature));
       } else {
-        this.energyModelState.indoorTemperature += (currentHourData.temperature - this.energyModelState.indoorTemperature) * 0.1;
+        const tempDiff = currentHourData.temperature - this.energyModelState.indoorTemperature;
+        this.energyModelState.indoorTemperature += tempDiff * 0.2;
+        // Clamp to reasonable bounds
+        this.energyModelState.indoorTemperature = Math.max(15, 
+          Math.min(35, this.energyModelState.indoorTemperature));
       }
 
       if (aiAppliances.controllable.water_heater.active) {
-        this.energyModelState.waterTemperature = Math.min(65, this.energyModelState.waterTemperature + 2);
+        const tempDiff = 60 - this.energyModelState.waterTemperature;
+        this.energyModelState.waterTemperature += tempDiff * 0.5;
+        // Clamp to reasonable bounds
+        this.energyModelState.waterTemperature = Math.max(45, 
+          Math.min(65, this.energyModelState.waterTemperature));
       } else {
-        this.energyModelState.waterTemperature = Math.max(45, this.energyModelState.waterTemperature - 0.8);
+        this.energyModelState.waterTemperature = Math.max(45, 
+          Math.min(65, this.energyModelState.waterTemperature - 1.0));
       }
 
       // EV charging optimization
