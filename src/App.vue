@@ -11,6 +11,7 @@
       <!-- Energy Flow Diagram -->
       <div class="diagram-section">
         <energy-flow-diagram
+           ref="energyDiagram"
            :solar-output="solarOutput"
            :battery-level="batteryLevel"
            :battery-status="batteryStatus"
@@ -501,6 +502,19 @@ export default {
       } else {
         this.energyModelState.evSoC = Math.max(0.2, this.energyModelState.evSoC - 0.02);
       }
+
+      this.updateTemperatureDisplay();
+    },
+
+    // Add this method to pass temperature updates to the diagram
+    updateTemperatureDisplay() {
+      // Emit temperature updates to child component
+      this.$nextTick(() => {
+        if (this.$refs.energyDiagram) {
+          this.$refs.energyDiagram.indoorTemp = this.energyModelState.indoorTemperature;
+          this.$refs.energyDiagram.waterTemp = this.energyModelState.waterTemperature;
+        }
+      });
     },
 
     temperatureBasedControl(hvacAppliance, waterHeaterAppliance) {
