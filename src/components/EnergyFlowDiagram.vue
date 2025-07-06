@@ -1512,70 +1512,52 @@ export default {
     
     getApplianceSvg(type) {
       const icons = {
-        hvac: `<g>
-          <rect x="2" y="3" width="20" height="18" rx="2" ry="2"></rect>
-          <line x1="7" y1="3" x2="7" y2="21"></line>
-          <line x1="17" y1="3" x2="17" y2="21"></line>
-          <line x1="2" y1="9" x2="22" y2="9"></line>
-          <line x1="2" y1="15" x2="22" y2="15"></line>
-        </g>`,
-        refrigerator: `<g>
-          <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
-          <path d="M4 13h16"></path>
-          <path d="M8 2v2"></path>
-          <path d="M8 13v2"></path>
-        </g>`,
-        lights: `<g>
-          <circle cx="12" cy="12" r="5"></circle>
-          <path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"></path>
-        </g>`,
-        ev_charger: `<g>
-          <rect x="6" y="11" width="12" height="10" rx="2" ry="2"></rect>
-          <path d="M12 2v9"></path>
-          <path d="M9 5h6"></path>
-          <path d="M9 16h6"></path>
-        </g>`,
-        dishwasher: `<g>
-          <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
-          <path d="M6 4v16"></path>
-          <path d="M18 4v16"></path>
-          <path d="M2 10h4"></path>
-          <path d="M2 14h4"></path>
-          <path d="M18 10h4"></path>
-          <path d="M18 14h4"></path>
-        </g>`,
-        water_heater: `<g>
-          <rect x="6" y="3" width="12" height="18" rx="2" ry="2"></rect>
-          <path d="M12 7v10"></path>
-          <path d="M10 13h4"></path>
-        </g>`,
-        wash_machine: `<g>
-          <rect x="2" y="2" width="20" height="20" rx="2" ry="2"></rect>
-          <circle cx="12" cy="12" r="6"></circle>
-          <circle cx="12" cy="12" r="2"></circle>
-        </g>`,
-        clothes_dryer: `<g>
-          <rect x="2" y="2" width="20" height="20" rx="2" ry="2"></rect>
-          <circle cx="12" cy="12" r="6"></circle>
-          <line x1="12" y1="6" x2="12" y2="18"></line>
-          <line x1="6" y1="12" x2="18" y2="12"></line>
-        </g>`,
-        tv: `<g>
-          <rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect>
-          <polyline points="17 2 12 7 7 2"></polyline>
-        </g>`,
-        vacuum: `<g>
-          <circle cx="12" cy="12" r="9"></circle>
-          <path d="M7 15h10"></path>
-          <path d="M12 6v6"></path>
-         </g>`,
-        hair_dryer: `<g>
-          <path d="M10 6h4v14a2 2 0 01-2 2 2 2 0 01-2-2V6z"></path>
-          <path d="M6 6h8a0 0 0 011 1v3a0 0 0 01-1 1H6a2 2 0 01-2-2V8a2 2 0 012-2z"></path>
-          <path d="M18 4v6"></path>
-          <path d="M18 6l-4-2"></path>
-          <path d="M18 8l-4 2"></path>
-        </g>`
+        hvac: `<rect x="2" y="3" width="20" height="18" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="2"/>
+               <path d="M7 8h10M7 12h10M7 16h10" stroke="currentColor" stroke-width="2"/>
+               <circle cx="18" cy="8" r="1" fill="currentColor"/>`,
+        
+        refrigerator: `<rect x="4" y="2" width="16" height="20" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                       <path d="M4 13h16" stroke="currentColor" stroke-width="2"/>
+                       <path d="M8 6v4M8 15v4" stroke="currentColor" stroke-width="2"/>`,
+        
+        lights: `<circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="2"/>
+                 <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="2"/>`,
+        
+        ev_charger: `<rect x="6" y="11" width="12" height="10" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                     <path d="M12 2v9" stroke="currentColor" stroke-width="2"/>
+                     <path d="M8 5l8 0" stroke="currentColor" stroke-width="2"/>
+                     <circle cx="9" cy="16" r="1" fill="currentColor"/>
+                     <circle cx="15" cy="16" r="1" fill="currentColor"/>`,
+        
+        dishwasher: `<rect x="2" y="4" width="20" height="16" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                     <circle cx="7" cy="8" r="1" fill="currentColor"/>
+                     <circle cx="17" cy="8" r="1" fill="currentColor"/>
+                     <path d="M6 12h12M6 16h12" stroke="currentColor" stroke-width="2"/>`,
+        
+        water_heater: `<rect x="6" y="3" width="12" height="18" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                       <path d="M10 7h4M10 11h4M10 15h4" stroke="currentColor" stroke-width="2"/>
+                       <circle cx="12" cy="6" r="1" fill="currentColor"/>`,
+        
+        wash_machine: `<rect x="2" y="2" width="20" height="20" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                       <circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="2"/>
+                       <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                       <path d="M6 6h2M16 6h2" stroke="currentColor" stroke-width="2"/>`,
+        
+        clothes_dryer: `<rect x="2" y="2" width="20" height="20" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                        <circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="2"/>
+                        <path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" opacity="0.5"/>
+                        <path d="M6 6h2M16 6h2" stroke="currentColor" stroke-width="2"/>`,
+        
+        tv: `<rect x="2" y="7" width="20" height="15" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="2"/>
+             <path d="M8 2l4 5 4-5" stroke="currentColor" stroke-width="2" fill="none"/>
+             <circle cx="19" cy="9" r="1" fill="currentColor"/>`,
+        
+        vacuum: `<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/>
+                 <path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="2"/>
+                 <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/>`,
+        
+        hair_dryer: `<path d="M6 6h8a4 4 0 014 4v4a4 4 0 01-4 4H6a2 2 0 01-2-2V8a2 2 0 012-2z" fill="none" stroke="currentColor" stroke-width="2"/>
+                     <path d="M18 10v4M20 8v8M22 9v6" stroke="currentColor" stroke-width="2"/>`
       };
       
       return icons[type] || icons.hvac;

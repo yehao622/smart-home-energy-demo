@@ -441,37 +441,57 @@ export default {
     },
 
     updateEnergyModels(hourData) {
-      // Simple energy model updates
       const hour = parseInt(hourData.hour.split(':')[0]);
       
-      // Indoor temperature model (simplified)
+      // HVAC control with more aggressive temperature changes
+      const hvacAppliance = this.appliances.find(app => app.type === 'hvac');
       const targetTemp = 22;
-      const hvacActive = this.appliances.find(app => app.type === 'hvac')?.active || false;
       
-      if (hvacActive) {
+      if (hvacAppliance && hvacAppliance.active) {
+        // When HVAC is on, move temperature toward target quickly
         const tempDiff = targetTemp - this.energyModelState.indoorTemperature;
-        this.energyModelState.indoorTemperature += tempDiff * 0.8; 
+        this.energyModelState.indoorTemperature += tempDiff * 0.4;
+        
+        // Update HVAC power based on how hard it's working
+        const powerNeeded = Math.abs(tempDiff) * 0.8 + 0.5;
+        hvacAppliance.power = Math.min(2.5, powerNeeded);
+        
+        console.log(`HVAC ON: Target=${targetTemp}°C, Current=${this.energyModelState.indoorTemperature.toFixed(1)}°C, Power=${hvacAppliance.power.toFixed(1)}kW`);
       } else {
-        // Drift toward outdoor temperature
-        const tempDiff = hourData.temperature - this.energyModelState.indoorTemperature;
-        this.energyModelState.indoorTemperature += tempDiff * 0.3;
+        // When HVAC is off, temperature drifts toward outdoor
+        const outdoorTemp = hourData.temperature;
+        const tempDiff = outdoorTemp - this.energyModelState.indoorTemperature;
+        this.energyModelState.indoorTemperature += tempDiff * 0.15;
+        
+        if (hvacAppliance) hvacAppliance.power = 0;
       }
-
-      // Water heater model
-      const waterHeaterActive = this.appliances.find(app => app.type === 'water_heater')?.active || false;
+      
+      // Water heater control with visible changes
+      const waterHeaterAppliance = this.appliances.find(app => app.type === 'water_heater');
       const targetWaterTemp = 60;
       
-      if (waterHeaterActive) {
-         const tempDiff = targetWaterTemp - this.energyModelState.waterTemperature;
-         this.energyModelState.waterTemperature += tempDiff * 0.6;
+      if (waterHeaterAppliance && waterHeaterAppliance.active) {
+        // When heater is on, heat water quickly
+        const tempDiff = targetWaterTemp - this.energyModelState.waterTemperature;
+        this.energyModelState.waterTemperature += tempDiff * 0.3;
+        
+        // Update power based on heating needs
+        const powerNeeded = Math.abs(tempDiff) * 0.6 + 1.0;
+        waterHeaterAppliance.power = Math.min(4.5, powerNeeded);
+        
+        console.log(`Water Heater ON: Target=${targetWaterTemp}°C, Current=${this.energyModelState.waterTemperature.toFixed(1)}°C, Power=${waterHeaterAppliance.power.toFixed(1)}kW`);
       } else {
-        // Natural cooling
-        this.energyModelState.waterTemperature = Math.max(45, 
-          this.energyModelState.waterTemperature - 1.5);
+        // When heater is off, water cools down
+        this.energyModelState.waterTemperature = Math.max(45, this.energyModelState.waterTemperature - 0.8);
+        
+        if (waterHeaterAppliance) waterHeaterAppliance.power = 0;
       }
-
-      // EV model
-      this.energyModelState.evConnected = hour >= 18 || hour <= 7; // Home during evening/night
+      
+      // Auto-control appliances based on temperature
+      this.temperatureBasedControl(hvacAppliance, waterHeaterAppliance);
+      
+      // Rest of EV logic stays the same...
+      this.energyModelState.evConnected = hour >= 18 || hour <= 7;
       
       if (this.energyModelState.evConnected) {
         const evChargerActive = this.appliances.find(app => app.type === 'ev_charger')?.active || false;
@@ -479,8 +499,37 @@ export default {
           this.energyModelState.evSoC = Math.min(0.85, this.energyModelState.evSoC + 0.05);
         }
       } else {
-        // EV away, slowly drain battery
         this.energyModelState.evSoC = Math.max(0.2, this.energyModelState.evSoC - 0.02);
+      }
+    },
+
+    temperatureBasedControl(hvacAppliance, waterHeaterAppliance) {
+      // Auto-control HVAC based on temperature
+      if (hvacAppliance) {
+        const needsCooling = this.energyModelState.indoorTemperature > 25;
+        const needsHeating = this.energyModelState.indoorTemperature < 19;
+        
+        if ((needsCooling || needsHeating) && !hvacAppliance.active) {
+          this.toggleAppliance(hvacAppliance.id);
+          console.log(`Auto-turned ON HVAC: Indoor temp = ${this.energyModelState.indoorTemperature.toFixed(1)}°C`);
+        } else if (!needsCooling && !needsHeating && hvacAppliance.active) {
+          this.toggleAppliance(hvacAppliance.id);
+          console.log(`Auto-turned OFF HVAC: Indoor temp = ${this.energyModelState.indoorTemperature.toFixed(1)}°C`);
+        }
+      }
+      
+      // Auto-control water heater based on temperature
+      if (waterHeaterAppliance) {
+        const needsHeating = this.energyModelState.waterTemperature < 50;
+        const isHot = this.energyModelState.waterTemperature > 62;
+        
+        if (needsHeating && !waterHeaterAppliance.active) {
+          this.toggleAppliance(waterHeaterAppliance.id);
+          console.log(`Auto-turned ON Water Heater: Water temp = ${this.energyModelState.waterTemperature.toFixed(1)}°C`);
+        } else if (isHot && waterHeaterAppliance.active) {
+          this.toggleAppliance(waterHeaterAppliance.id);
+          console.log(`Auto-turned OFF Water Heater: Water temp = ${this.energyModelState.waterTemperature.toFixed(1)}°C`);
+        }
       }
     },
 

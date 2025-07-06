@@ -5,7 +5,8 @@
 }
 
 .flow-line {
-  transition: stroke-width 0.3s;
+  stroke-dasharray: 10, 5;
+  animation: flow 2s linear infinite;
 }
 
 .energy-flow-container {
@@ -124,9 +125,11 @@
 @keyframes pulse {
   0%, 100% {
     opacity: 1;
+    transform: scale(1);
   }
   50% {
     opacity: 0.7;
+    transform: scale(1.05);
   }
 }
 
@@ -144,6 +147,15 @@
 
 .flow-up {
   animation: flowUp var(--animation-duration, 2s) linear infinite !important;
+}
+
+@keyframes flow {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: 15;
+  }
 }
 
 @keyframes flowRight {
@@ -188,6 +200,10 @@
   flex-wrap: wrap;
   gap: 15px;
   margin-top: 20px;
+}
+
+.appliance-icon.active {
+  animation: activeGlow 1.5s ease-in-out infinite alternate;
 }
 
 .appliance-card {
@@ -249,6 +265,15 @@
   margin-top: 4px;
   padding: 2px 6px;
   border-radius: 4px;
+}
+
+@keyframes activeGlow {
+  from {
+    filter: drop-shadow(0 0 3px currentColor);
+  }
+  to {
+    filter: drop-shadow(0 0 8px currentColor);
+  }
 }
 
 .appliance-status.on {
