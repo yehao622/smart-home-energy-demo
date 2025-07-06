@@ -390,7 +390,7 @@ export default {
 </script>
 
 <style scoped>
-/* Include all the CSS from your original EnergyFlowDiagram.css here */
+import './EnergyFlowDiagram.css'
 /* I'll provide the essential styles */
 
 .energy-flow-container {
