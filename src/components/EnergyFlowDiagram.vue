@@ -390,8 +390,6 @@ export default {
 </script>
 
 <style scoped>
-import './EnergyFlowDiagram.css'
-/* I'll provide the essential styles */
 
 .energy-flow-container {
   width: 100%;
@@ -420,6 +418,201 @@ import './EnergyFlowDiagram.css'
   to { stroke-dashoffset: 15; }
 }
 
+.chart-container {
+  background-color: white;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  position: relative;
+  height: 200px;
+  margin-bottom: 15px;
+}
+
+.simple-chart {
+  display: flex;
+  gap: 10px;
+  height: 120px;
+  align-items: end;
+  padding: 20px;
+}
+
+.chart-bar {
+  width: 30px;
+  border-radius: 4px 4px 0 0;
+  transition: height 0.3s ease;
+  min-height: 5px;
+}
+
+.temp-display {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 20px;
+}
+
+.temp-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+.temp-label {
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.temp-value {
+  font-weight: bold;
+  color: #1f2937;
+  font-size: 1.1rem;
+}
+
+.appliances-and-charts {
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.appliances-column {
+  flex: 1;
+  min-width: 0;
+}
+
+.charts-column {
+  flex: 0 0 300px;
+  min-width: 300px;
+}
+
+.appliance-group {
+  margin-bottom: 20px;
+}
+
+.appliance-group-header {
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  font-weight: bold;
+  border-radius: 6px;
+}
+
+.appliance-group-header.group-1 {
+  background: #fecdd3;
+  color: #be123c;
+}
+
+.appliance-group-header.group-2 {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.appliance-group-header.group-3 {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.appliances-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  width: 100%;
+}
+
+.appliance-card {
+  flex: 1;
+  min-width: 150px;
+  max-width: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.appliance-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.appliance-card.group-1 {
+  background: #fef3f2;
+  border-left: 3px solid #f43f5e;
+}
+
+.appliance-card.group-2 {
+  background: #f0fdf4;
+  border-left: 3px solid #10b981;
+}
+
+.appliance-card.group-3 {
+  background: #eff6ff;
+  border-left: 3px solid #3b82f6;
+}
+
+.appliance-name {
+  font-weight: bold;
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+.appliance-power {
+  color: #9ca3af;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.appliance-power.active {
+  color: #3b82f6;
+}
+
+.appliance-status {
+  font-size: 12px;
+  margin-top: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.appliance-status.on {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.appliance-status.off {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.environmental-charts {
+  background-color: #f8fafc;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 15px;
+}
+
+.environmental-charts h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1.2rem;
+  color: #1f2937;
+}
+
+.current-value {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  padding: 3px 6px;
+  background-color: #f3f4f6;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
 .appliance-card.active {
   background: linear-gradient(135deg, #dbeafe, #bfdbfe);
   box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
@@ -430,5 +623,259 @@ import './EnergyFlowDiagram.css'
   margin-bottom: 8px;
 }
 
-/* Add more styles as needed... */
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.config-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.control-buttons {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.control-buttons button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.start-btn {
+  background: #10b981;
+  color: white;
+}
+
+.pause-btn {
+  background: #ef4444;
+  color: white;
+}
+
+.resume-btn {
+  background: #10b981;
+  color: white;
+}
+
+.reset-btn {
+  background: #6b7280;
+  color: white;
+}
+
+.control-buttons button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.simulation-time-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.simulation-time-input input {
+  width: 60px;
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.simulation-time-input label,
+.simulation-time-input span {
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.speed-control select {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+}
+
+.simulation-time-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 15px 0;
+  padding: 10px 16px;
+  background-color: #f3f4f6;
+  border-radius: 8px;
+  font-weight: bold;
+  width: fit-content;
+}
+
+.time-value {
+  font-size: 18px;
+  color: #1f2937;
+}
+
+.time-day {
+  font-size: 14px;
+  color: #6b7280;
+  padding: 2px 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+}
+
+.energy-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.stat-card {
+  padding: 15px;
+  border-radius: 8px;
+  background: #f9fafb;
+  border-left: 4px solid;
+}
+
+.stat-card.solar {
+  border-left-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.stat-card.battery {
+  border-left-color: #10b981;
+  background: #ecfdf5;
+}
+
+.stat-card.grid {
+  border-left-color: #8b5cf6;
+  background: #f5f3ff;
+}
+
+.stat-card.home {
+  border-left-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.stat-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #4b5563;
+  margin-bottom: 6px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.rl-insights {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: #f9fafb;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.rl-insights h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #1f2937;
+  font-size: 18px;
+}
+
+.rl-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.rl-stat-card {
+  padding: 15px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.rl-stat-title {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.rl-stat-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.rl-temperatures {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.rl-temp-card {
+  padding: 15px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.rl-temp-title {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.rl-temp-display {
+  display: flex;
+  justify-content: space-between;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .appliances-and-charts {
+    flex-direction: column;
+  }
+  
+  .charts-column {
+    flex: 1;
+    min-width: 100%;
+  }
+  
+  .energy-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .rl-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .control-buttons {
+    justify-content: center;
+  }
+}
+
 </style>
