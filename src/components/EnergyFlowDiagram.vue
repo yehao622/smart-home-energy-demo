@@ -191,11 +191,11 @@
             <h4>Solar & Battery (kW)</h4>
             <div class="simple-chart">
               <div class="chart-item">
-                <div class="chart-bar" :style="{ height: (solarOutput/5*100) + '%', backgroundColor: '#f59e0b' }"></div>
+                <div class="chart-bar" :style="{ height: solarBarHeight, backgroundColor: solarBarColor }"></div>
                 <div class="chart-label">Solar</div>
               </div>
               <div class="chart-item">
-                <div class="chart-bar" :style="{ height: (batteryLevel) + '%', backgroundColor: '#10b981' }"></div>
+                <div class="chart-bar" :style="{ height: batteryBarHeight, backgroundColor: batteryBarColor }"></div>
                 <div class="chart-label">Battery</div>
               </div>
             </div>
@@ -309,7 +309,10 @@ export default {
     simulationState: { type: String, default: 'idle' },
     rlPrediction: { type: Object, default: null },
     simulationFormattedTime: { type: String, default: "00:00" },
-    simulationDay: { type: Number, default: 1 }
+    simulationDay: { type: Number, default: 1 },
+    indoorTemperature: { type: Number, default: 22 },
+    waterTemperature: { type: Number, default: 55 },
+    energyModels: { type: Object, default: () => ({}) }
   },
 
   data() {
@@ -330,6 +333,19 @@ export default {
     },
     appliancesGroup3() {
       return this.appliances.filter(a => a.group === 3);
+    },
+
+    solarBarHeight() {
+      return (this.solarOutput / 5 * 100) + '%';
+    },
+    batteryBarHeight() {
+      return this.batteryLevel + '%';
+    },
+    solarBarColor() {
+      return this.solarOutput > 0 ? '#f59e0b' : '#e5e7eb';
+    },
+    batteryBarColor() {
+      return this.batteryLevel > 50 ? '#10b981' : this.batteryLevel > 20 ? '#f59e0b' : '#ef4444';
     }
   },
 
@@ -341,6 +357,18 @@ export default {
         if (this.rlPrediction) {
           this.indoorTemp = this.safeGet(this.rlPrediction, 'temperatures.home.current', this.indoorTemp);
           this.waterTemp = this.safeGet(this.rlPrediction, 'temperatures.water.current', this.waterTemp);
+        }
+      },
+      deep: true
+    },
+
+    '$parent.energyModelState': {
+      handler(newModels) {
+        if (newModels) {
+          this.indoorTemp = newModels.indoorTemperature?.toFixed(1) || this.indoorTemp;
+          this.waterTemp = newModels.waterTemperature?.toFixed(1) || this.waterTemp;
+          this.currentHomeTemp = this.indoorTemp;
+          this.currentWaterTemp = this.waterTemp;
         }
       },
       deep: true

@@ -359,6 +359,7 @@ export default {
 
       // Update energy models
       this.updateEnergyModels(currentHourData);
+      this.$forceUpdate();
 
       // Force notify components about energy model changes
       this.$emit('energy-models-updated', this.energyModelState);
@@ -502,6 +503,16 @@ export default {
       } else {
         this.energyModelState.evSoC = Math.max(0.2, this.energyModelState.evSoC - 0.02);
       }
+
+      this.$nextTick(() => {
+        // Force update the EnergyFlowDiagram with new temperatures
+        if (this.$refs.energyDiagram) {
+          this.$refs.energyDiagram.indoorTemp = this.energyModelState.indoorTemperature.toFixed(1);
+          this.$refs.energyDiagram.waterTemp = this.energyModelState.waterTemperature.toFixed(1);
+          this.$refs.energyDiagram.currentHomeTemp = this.energyModelState.indoorTemperature.toFixed(1);
+          this.$refs.energyDiagram.currentWaterTemp = this.energyModelState.waterTemperature.toFixed(1);
+        }
+      });
 
       this.updateTemperatureDisplay();
     },
