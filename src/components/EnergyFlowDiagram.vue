@@ -49,15 +49,15 @@
         <rect width="100%" height="100%" fill="#f8fafc" />
         
         <!-- Solar Panel -->
-        <g class="device-icon" :class="{ active: solarOutput > 0, pulse: isRunning && solarOutput > 0 }">
+        <g class="device-icon" :class="{ active: solarOutput > 0 }">
           <rect x="50" y="50" width="100" height="80" rx="10" :fill="solarOutput > 0 ? '#fef3c7' : '#f3f4f6'" 
                 stroke="#f59e0b" :stroke-width="solarOutput > 0 ? 3 : 2"/>
           <text x="100" y="75" text-anchor="middle" class="device-label">☀️ Solar</text>
-          <text x="100" y="95" text-anchor="middle" class="device-value">{{ solarOutput }} kW</text>
+          <text x="100" y="95" text-anchor="middle" class="device-value">{{ solarOutput.toFixed(1) }} kW</text>
         </g>
 
         <!-- Battery -->
-        <g class="device-icon" :class="{ active: batteryLevel > 10, pulse: isRunning && Math.abs(batteryPower) > 0 }">
+        <g class="device-icon" :class="{ active: batteryLevel > 10 }">
           <rect x="300" y="100" width="100" height="80" rx="10" :fill="batteryLevel > 10 ? '#d1fae5' : '#f3f4f6'" 
                 stroke="#10b981" :stroke-width="batteryLevel > 10 ? 3 : 2"/>
           <text x="350" y="125" text-anchor="middle" class="device-label">🔋 Battery</text>
@@ -68,11 +68,11 @@
         </g>
 
         <!-- Grid -->
-        <g class="device-icon" :class="{ active: Math.abs(gridPower) > 0, pulse: isRunning && Math.abs(gridPower) > 0 }">
+        <g class="device-icon" :class="{ active: Math.abs(gridPower) > 0 }">
           <rect x="650" y="50" width="100" height="80" rx="10" :fill="Math.abs(gridPower) > 0 ? '#e7d3ff' : '#f3f4f6'" 
                 stroke="#8b5cf6" :stroke-width="Math.abs(gridPower) > 0 ? 3 : 2"/>
           <text x="700" y="75" text-anchor="middle" class="device-label">⚡ Grid</text>
-          <text x="700" y="95" text-anchor="middle" class="device-value">{{ gridPower }} kW</text>
+          <text x="700" y="95" text-anchor="middle" class="device-value">{{ gridPower.toFixed(1) }} kW</text>
         </g>
 
         <!-- House -->
@@ -80,7 +80,7 @@
           <rect x="425" y="250" width="150" height="100" rx="10" fill="#dbeafe" 
                 stroke="#3b82f6" stroke-width="3"/>
           <text x="500" y="285" text-anchor="middle" class="device-label">🏠 Home</text>
-          <text x="500" y="305" text-anchor="middle" class="device-value">{{ houseDemand }} kW</text>
+          <text x="500" y="305" text-anchor="middle" class="device-value">{{ houseDemand.toFixed(1) }} kW</text>
         </g>
         
         <!-- Energy Flow Lines with Animation -->
@@ -136,7 +136,7 @@
                  @click="toggleAppliance(app.id)">
               <div class="appliance-icon">{{ getApplianceIcon(app.type) }}</div>
               <div class="appliance-name">{{ app.name }}</div>
-              <div class="appliance-power" :class="{ active: app.active }">{{ app.power }} kW</div>
+              <div class="appliance-power" :class="{ active: app.active }">{{ parseFloat(app.power).toFixed(1) }} kW</div>
               <div class="appliance-status" :class="app.active ? 'on' : 'off'">
                 {{ app.active ? 'ON' : 'OFF' }}
               </div>
@@ -154,7 +154,7 @@
                  @click="toggleAppliance(app.id)">
               <div class="appliance-icon">{{ getApplianceIcon(app.type) }}</div>
               <div class="appliance-name">{{ app.name }}</div>
-              <div class="appliance-power" :class="{ active: app.active }">{{ app.power }} kW</div>
+              <div class="appliance-power" :class="{ active: app.active }">{{ parseFloat(app.power).toFixed(1) }} kW</div>
               <div class="appliance-status" :class="app.active ? 'on' : 'off'">
                 {{ app.active ? 'ON' : 'OFF' }}
               </div>
@@ -172,7 +172,7 @@
                  @click="toggleAppliance(app.id)">
               <div class="appliance-icon">{{ getApplianceIcon(app.type) }}</div>
               <div class="appliance-name">{{ app.name }}</div>
-              <div class="appliance-power" :class="{ active: app.active }">{{ app.power }} kW</div>
+              <div class="appliance-power" :class="{ active: app.active }">{{ parseFloat(app.power).toFixed(1) }} kW</div>
               <div class="appliance-status" :class="app.active ? 'on' : 'off'">
                 {{ app.active ? 'ON' : 'OFF' }}
               </div>
@@ -190,23 +190,41 @@
           <div class="chart-container">
             <h4>Solar & Battery (kW)</h4>
             <div class="simple-chart">
-              <div class="chart-bar" :style="{ height: (solarOutput/5*100) + '%', backgroundColor: '#f59e0b' }"></div>
-              <div class="chart-bar" :style="{ height: (batteryLevel) + '%', backgroundColor: '#10b981' }"></div>
+              <div class="chart-item">
+                <div class="chart-bar" :style="{ height: (solarOutput/5*100) + '%', backgroundColor: '#f59e0b' }"></div>
+                <div class="chart-label">Solar</div>
+              </div>
+              <div class="chart-item">
+                <div class="chart-bar" :style="{ height: (batteryLevel) + '%', backgroundColor: '#10b981' }"></div>
+                <div class="chart-label">Battery</div>
+              </div>
             </div>
             <div class="current-value">Solar: {{ solarOutput }}kW | Battery: {{ batteryLevel.toFixed(0) }}%</div>
           </div>
 
           <div class="chart-container">
             <h4>Temperature (°C)</h4>
-            <div class="temp-display">
-              <div class="temp-item">
-                <span class="temp-label">🌡️ Indoor:</span>
-                <span class="temp-value">{{ indoorTemp.toFixed(1) }}°C</span>
+            <div class="temp-chart">
+              <div class="temp-chart-item">
+                <div class="temp-bar-container">
+                  <div class="temp-target-line" style="bottom: 60%"></div>
+                  <div class="temp-bar" :style="{ height: ((indoorTemp - 15) / 20 * 100) + '%', backgroundColor: '#3b82f6' }"></div>
+                </div>
+                <div class="temp-label">🏠 Indoor</div>
+                <div class="temp-value">{{ indoorTemp.toFixed(1) }}°C</div>
               </div>
-              <div class="temp-item">
-                <span class="temp-label">💧 Water:</span>
-                <span class="temp-value">{{ waterTemp.toFixed(1) }}°C</span>
+              <div class="temp-chart-item">
+                <div class="temp-bar-container">
+                  <div class="temp-target-line" style="bottom: 75%"></div>
+                  <div class="temp-bar" :style="{ height: ((waterTemp - 40) / 30 * 100) + '%', backgroundColor: '#f59e0b' }"></div>
+                </div>
+                <div class="temp-label">💧 Water</div>
+                <div class="temp-value">{{ waterTemp.toFixed(1) }}°C</div>
               </div>
+            </div>
+            <div class="temp-targets">
+              <span>🏠 Target: 22°C</span>
+              <span>💧 Target: 60°C</span>
             </div>
           </div>
         </div>
@@ -217,7 +235,7 @@
     <div class="energy-stats">
       <div class="stat-card solar">
         <div class="stat-title">☀️ Solar Production</div>
-        <div class="stat-value">{{ solarOutput }} kW</div>
+        <div class="stat-value">{{ solarOutput.toFixed(1) }} kW</div>
       </div>
       <div class="stat-card battery">
         <div class="stat-title">🔋 Battery Level</div>
@@ -225,11 +243,11 @@
       </div>
       <div class="stat-card grid">
         <div class="stat-title">⚡ Grid Usage</div>
-        <div class="stat-value">{{ gridPower }} kW</div>
+        <div class="stat-value">{{ gridPower.toFixed(1) }} kW</div>
       </div>
       <div class="stat-card home">
         <div class="stat-title">🏠 Home Demand</div>
-        <div class="stat-value">{{ houseDemand }} kW</div>
+        <div class="stat-value">{{ houseDemand.toFixed(1) }} kW</div>
       </div>
     </div>
 
@@ -339,17 +357,17 @@ export default {
   methods: {
     getApplianceIcon(type) {
       const icons = {
-        hvac: '❄️',
-        refrigerator: '🧊',
+        hvac: '🌡️',
+        refrigerator: '🗄',
         lights: '💡',
-        ev_charger: '🔌',
-        dishwasher: '🍽️',
-        water_heater: '🚿',
-        wash_machine: '👕',
-        clothes_dryer: '🌀',
+        ev_charger: '🚗',
+        dishwasher: '🧽',
+        water_heater: '🔥',
+        wash_machine: '🫧👕',
+        clothes_dryer: '☀️',
         tv: '📺',
-        vacuum: '🧹',
-        hair_dryer: '💨'
+        vacuum: '🧹🪣',
+        hair_dryer: '༄'
       };
       return icons[type] || '⚡';
     },
@@ -428,12 +446,40 @@ export default {
   margin-bottom: 15px;
 }
 
+.device-icon {
+  transform: none !important;
+}
+
 .simple-chart {
   display: flex;
-  gap: 10px;
+  gap: 20px;
   height: 120px;
   align-items: end;
   padding: 20px;
+  justify-content: center;
+}
+
+.chart-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  text-align: center;
+}
+
+.temp-chart {
+  display: flex;
+  gap: 30px;
+  height: 120px;
+  align-items: end;
+  padding: 20px;
+  justify-content: center;
 }
 
 .chart-bar {
@@ -441,6 +487,61 @@ export default {
   border-radius: 4px 4px 0 0;
   transition: height 0.3s ease;
   min-height: 5px;
+}
+
+.temp-chart-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.temp-bar-container {
+  position: relative;
+  width: 30px;
+  height: 100px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+.temp-bar {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  border-radius: 0 0 3px 3px;
+  transition: height 0.3s ease;
+  min-height: 5px;
+}
+
+.temp-target-line {
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background: #ef4444;
+  left: 0;
+  border-radius: 1px;
+}
+
+.temp-target-line::before {
+  content: 'Target';
+  position: absolute;
+  right: -45px;
+  top: -8px;
+  font-size: 10px;
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.temp-targets {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 10px;
+  padding: 8px;
+  background: #f8fafc;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #6b7280;
 }
 
 .temp-display {
@@ -460,14 +561,17 @@ export default {
 }
 
 .temp-label {
+  font-size: 12px;
   font-weight: 500;
-  color: #4b5563;
+  color: #6b7280;
+  text-align: center;
 }
 
 .temp-value {
+  font-size: 13px;
   font-weight: bold;
   color: #1f2937;
-  font-size: 1.1rem;
+  text-align: center;
 }
 
 .appliances-and-charts {
