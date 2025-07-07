@@ -175,7 +175,7 @@
                 stroke-dasharray="5,3"
                 class="flow-line">
             <animate attributeName="stroke-dashoffset" values="0;-8" dur="1s" repeatCount="indefinite"/>
-          </path>
+          </line>
         </g>
 
         <!-- Power Flow Labels positioned away from icons -->
