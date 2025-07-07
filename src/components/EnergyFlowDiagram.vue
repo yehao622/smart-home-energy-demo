@@ -284,7 +284,7 @@
                 <div class="temp-bar-container">
                   <div class="temp-target-line" style="bottom: 60%"></div>
                   <div class="temp-bar" :style="{ height: Math.max(10, Math.min(90, ((indoorTemp - 15) / 20 * 100))) + '%', backgroundColor: '#3b82f6' }"></div>
-                  <div class="temp-bar-value" v-if="indoorTemp > 16">{{ indoorTemp }}°C</div>
+                  <div class="temp-bar-value" v-if="indoorTemp > 16">{{ indoorTemp.toFixed(1) }}°C</div>
                 </div>
                 <div class="temp-label">🏠 Indoor</div>
                 <div class="temp-value">{{ indoorTemp.toFixed(1) }}°C</div>
@@ -293,7 +293,7 @@
                 <div class="temp-bar-container">
                   <div class="temp-target-line" style="bottom: 66%"></div>
                   <div class="temp-bar" :style="{ height: Math.max(10, Math.min(90, ((waterTemp - 40) / 30 * 100))) + '%', backgroundColor: '#f59e0b' }"></div>
-                  <div class="temp-bar-value" v-if="waterTemp > 45">{{ waterTemp }}°C</div>
+                  <div class="temp-bar-value" v-if="waterTemp > 45">{{ waterTemp.toFixed(1) }}°C</div>
                 </div>
                 <div class="temp-label">💧 Water</div>
                 <div class="temp-value">{{ waterTemp.toFixed(1) }}°C</div>
