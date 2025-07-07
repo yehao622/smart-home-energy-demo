@@ -1062,6 +1062,15 @@ export default {
             power = prediction.appliances.fixed.hair_dryer.power;
           }
 
+          // Force update animation conditions for AI mode
+          this.$nextTick(() => {
+            // Ensure the EnergyFlowDiagram knows we're in AI mode with active simulation
+            if (this.$refs.energyDiagram) {
+              // Force reactivity update
+              this.$refs.energyDiagram.$forceUpdate();
+            }
+          });
+
           return {
             ...app,
             active: isActive,

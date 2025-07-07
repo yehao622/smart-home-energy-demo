@@ -84,33 +84,33 @@
         </g>
         
         <!-- Energy Flow Lines with Animation -->
-        <g v-if="isRunning">
+        <g v-if="isRunning || (simulationState === 'ai' && rlPrediction)">
           <!-- Solar to House -->
           <line v-if="solarOutput > 0 && houseDemand > 0" 
                 x1="150" y1="90" x2="450" y2="280" 
-                stroke="#f59e0b" stroke-width="4" class="flow-line">
-            <animate attributeName="stroke-dasharray" values="0,20;20,0" dur="2s" repeatCount="indefinite"/>
+                stroke="#f59e0b" stroke-width="Math.min(8, 2 + solarOutput)" stroke-dasharray="10,5" class="flow-line">
+            <animate attributeName="stroke-dashoffset" values="0;-15" dur="1.5s" repeatCount="indefinite"/>
           </line>
           
           <!-- Battery to House -->
-          <line v-if="batteryStatus === 'discharging'" 
-                x1="400" y1="140" x2="470" y2="250" 
-                stroke="#10b981" stroke-width="3" class="flow-line">
-            <animate attributeName="stroke-dasharray" values="0,15;15,0" dur="1.5s" repeatCount="indefinite"/>
+          <line v-if="(batteryLevel > 20 && batteryPower < 0) || batteryStatus === 'discharging'"
+                x1="450" y1="160" x2="480" y2="250" 
+                stroke="#10b981" stroke-width="Math.min(6, 2 + Math.abs(batteryPower))" stroke-dasharray="8,4" class="flow-line">
+            <animate attributeName="stroke-dashoffset" values="0,-12" dur="1.8s" repeatCount="indefinite"/>
           </line>
           
           <!-- Solar to Battery -->
-          <line v-if="batteryStatus === 'charging' && solarOutput > houseDemand" 
-                x1="150" y1="100" x2="300" y2="130" 
-                stroke="#f59e0b" stroke-width="2" class="flow-line">
-            <animate attributeName="stroke-dasharray" values="0,10;10,0" dur="1.2s" repeatCount="indefinite"/>
+          <line v-if="(solarOutput > houseDemand && batteryLevel < 95) || (batteryStatus === 'charging')" 
+                x1="150" y1="90" x2="400" y2="120" 
+                stroke="#f59e0b" stroke-width="3" stroke-dasharray="8,4" class="flow-line">
+            <animate attributeName="stroke-dashoffset" values="0;-12" dur="1.2s" repeatCount="indefinite"/>
           </line>
           
           <!-- Grid to House -->
           <line v-if="gridPower > 0" 
-                x1="650" y1="90" x2="550" y2="250" 
-                stroke="#8b5cf6" stroke-width="3" class="flow-line">
-            <animate attributeName="stroke-dasharray" values="0,15;15,0" dur="1.8s" repeatCount="indefinite"/>
+                x1="750" y1="90" x2="550" y2="250" 
+                stroke="#8b5cf6" stroke-width="Math.min(6, 2 + gridPower)" stroke-dasharray="10,5" class="flow-line">
+            <animate attributeName="stroke-dashoffset" values="0;-15" dur="2s" repeatCount="indefinite"/>
           </line>
 
           <!-- Grid to Battery -->
@@ -118,6 +118,13 @@
                 x1="650" y1="110" x2="400" y2="120" 
                 stroke="#8b5cf6" stroke-width="2" class="flow-line">
             <animate attributeName="stroke-dasharray" values="0,12;12,0" dur="1.6s" repeatCount="indefinite"/>
+          </line>
+
+          <!-- Solar to Grid (export) -->
+          <line v-if="(solarOutput > houseDemand && batteryLevel > 95) || gridPower < 0" 
+                x1="150" y1="80" x2="750" y2="80" 
+                stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,3" class="flow-line">
+            <animate attributeName="stroke-dashoffset" values="0;-8" dur="1s" repeatCount="indefinite"/>
           </line>
         </g>
       </svg>
@@ -192,14 +199,16 @@
             <div class="simple-chart">
               <div class="chart-item">
                 <div class="chart-bar" :style="{ height: solarBarHeight, backgroundColor: solarBarColor }"></div>
+                  <div class="chart-value" v-if="solarOutput > 0">{{ solarOutput.toFixed(1) }}</div>
                 <div class="chart-label">Solar</div>
               </div>
               <div class="chart-item">
                 <div class="chart-bar" :style="{ height: batteryBarHeight, backgroundColor: batteryBarColor }"></div>
+                  <div class="chart-value" v-if="batteryLevel > 10">{{ batteryLevel.toFixed(0) }}%</div>
                 <div class="chart-label">Battery</div>
               </div>
             </div>
-            <div class="current-value">Solar: {{ solarOutput }}kW | Battery: {{ batteryLevel.toFixed(0) }}%</div>
+            <div class="current-value">Solar: {{ solarOutput.toFixed(1) }}kW | Battery: {{ batteryLevel.toFixed(1) }}%</div>
           </div>
 
           <div class="chart-container">
@@ -470,8 +479,15 @@ export default {
   padding: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   position: relative;
-  height: 200px;
+  height: 180px;
   margin-bottom: 15px;
+}
+
+.chart-container h4 {
+  margin-top: 0;
+  margin-bottom: 5px; /* Reduced margin */
+  font-size: 0.9rem;
+  color: #4b5563;
 }
 
 .device-icon {
@@ -481,9 +497,9 @@ export default {
 .simple-chart {
   display: flex;
   gap: 20px;
-  height: 120px;
+  height: 100px;
   align-items: end;
-  padding: 20px;
+  padding: 15px 20px;
   justify-content: center;
 }
 
@@ -504,9 +520,9 @@ export default {
 .temp-chart {
   display: flex;
   gap: 30px;
-  height: 120px;
+  height: 100px;
   align-items: end;
-  padding: 20px;
+  padding: 15px 20px 25px 20px;
   justify-content: center;
 }
 
@@ -515,6 +531,19 @@ export default {
   border-radius: 4px 4px 0 0;
   transition: height 0.3s ease;
   min-height: 5px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-value {
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+  transform: rotate(-90deg);
+  white-space: nowrap;
 }
 
 .temp-chart-item {
@@ -527,7 +556,7 @@ export default {
 .temp-bar-container {
   position: relative;
   width: 30px;
-  height: 100px;
+  height: 80px;
   background: #f1f5f9;
   border-radius: 4px;
   border: 1px solid #e2e8f0;
