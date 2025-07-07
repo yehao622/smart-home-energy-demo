@@ -416,7 +416,7 @@ export default {
           this.batteryPower = 1.5;
           this.batteryLevel = Math.min(100, this.batteryLevel + 1);
         } else {
-          this.batteryStatus = 'empty';
+          this.batteryStatus = 'stable';
           this.batteryPower = 0;
         }
       } else {

@@ -283,15 +283,17 @@
               <div class="temp-chart-item">
                 <div class="temp-bar-container">
                   <div class="temp-target-line" style="bottom: 60%"></div>
-                  <div class="temp-bar" :style="{ height: ((indoorTemp - 15) / 20 * 100) + '%', backgroundColor: '#3b82f6' }"></div>
+                  <div class="temp-bar" :style="{ height: Math.max(10, Math.min(90, ((indoorTemp - 15) / 20 * 100))) + '%', backgroundColor: '#3b82f6' }"></div>
+                  <div class="temp-bar-value" v-if="indoorTemp > 16">{{ indoorTemp }}°C</div>
                 </div>
                 <div class="temp-label">🏠 Indoor</div>
                 <div class="temp-value">{{ indoorTemp.toFixed(1) }}°C</div>
               </div>
               <div class="temp-chart-item">
                 <div class="temp-bar-container">
-                  <div class="temp-target-line" style="bottom: 75%"></div>
-                  <div class="temp-bar" :style="{ height: ((waterTemp - 40) / 30 * 100) + '%', backgroundColor: '#f59e0b' }"></div>
+                  <div class="temp-target-line" style="bottom: 66%"></div>
+                  <div class="temp-bar" :style="{ height: Math.max(10, Math.min(90, ((waterTemp - 40) / 30 * 100))) + '%', backgroundColor: '#f59e0b' }"></div>
+                  <div class="temp-bar-value" v-if="waterTemp > 45">{{ waterTemp }}°C</div>
                 </div>
                 <div class="temp-label">💧 Water</div>
                 <div class="temp-value">{{ waterTemp.toFixed(1) }}°C</div>
@@ -546,18 +548,19 @@ export default {
 .chart-container {
   background-color: white;
   border-radius: 8px;
-  padding: 12px;
+  padding: 15px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   position: relative;
-  height: 180px;
+  height: 220px;
   margin-bottom: 15px;
+  overflow: hidden;
 }
 
 .chart-container h4 {
-  margin-top: 0;
-  margin-bottom: 5px; /* Reduced margin */
+  margin-top: 0 0 10px 0;
   font-size: 0.9rem;
   color: #4b5563;
+  text-align: center;
 }
 
 .device-icon {
@@ -589,11 +592,12 @@ export default {
 
 .temp-chart {
   display: flex;
-  gap: 30px;
-  height: 100px;
+  gap: 40px;
+  height: 130px;
   align-items: end;
-  padding: 15px 20px 25px 20px;
+  padding: 10px 20px;
   justify-content: center;
+  margin-bottom: 10px;
 }
 
 .chart-bar {
@@ -621,24 +625,41 @@ export default {
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  min-width: 60px;
 }
 
 .temp-bar-container {
   position: relative;
-  width: 30px;
-  height: 80px;
+  width: 35px;
+  height: 100px;
   background: #f1f5f9;
-  border-radius: 4px;
-  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  border: 2px solid #e2e8f0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
 }
 
 .temp-bar {
-  position: absolute;
-  bottom: 0;
+  position: relative;
   width: 100%;
-  border-radius: 0 0 3px 3px;
+  border-radius: 0 0 4px 4px;
   transition: height 0.3s ease;
-  min-height: 5px;
+  min-height: 10px;
+  max-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.temp-bar-value {
+  color: white;
+  font-size: 9px;
+  font-weight: bold;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
+  transform: rotate(-90deg);
+  white-space: nowrap;
 }
 
 .temp-target-line {
@@ -648,6 +669,7 @@ export default {
   background: #ef4444;
   left: 0;
   border-radius: 1px;
+  z-index: 2;
 }
 
 .temp-target-line::before {
@@ -660,15 +682,28 @@ export default {
   font-weight: 500;
 }
 
+.temp-target-line::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: -2px;
+  width: 0;
+  height: 0;
+  border-left: 4px solid #ef4444;
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+}
+
 .temp-targets {
   display: flex;
   justify-content: space-around;
-  margin-top: 10px;
-  padding: 8px;
+  margin-top: 5px;
+  padding: 6px;
   background: #f8fafc;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 11px;
   color: #6b7280;
+  border-top: 1px solid #e2e8f0;
 }
 
 .temp-display {
@@ -689,9 +724,10 @@ export default {
 
 .temp-label {
   font-size: 12px;
-  font-weight: 500;
-  color: #6b7280;
+  font-weight: 600;
+  color: #4b5563;
   text-align: center;
+  margin-top: 5px;
 }
 
 .temp-value {
