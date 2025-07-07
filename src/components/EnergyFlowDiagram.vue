@@ -46,83 +46,107 @@
     <div class="diagram">
       <svg width="100%" height="400" viewBox="0 0 1000 400">
         <!-- Background -->
+        <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+          <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#eee" stroke-width="1" />
+        </pattern>
         <rect width="100%" height="100%" fill="#f8fafc" />
         
         <!-- Solar Panel -->
-        <g class="device-icon" :class="{ active: solarOutput > 0 }">
-          <rect x="50" y="50" width="100" height="80" rx="10" :fill="solarOutput > 0 ? '#fef3c7' : '#f3f4f6'" 
-                stroke="#f59e0b" :stroke-width="solarOutput > 0 ? 3 : 2"/>
-          <text x="100" y="75" text-anchor="middle" class="device-label">☀️ Solar</text>
-          <text x="100" y="95" text-anchor="middle" class="device-value">{{ solarOutput.toFixed(1) }} kW</text>
+        <g class="device-icon solar" :class="{ active: solarOutput > 0 }">
+          <rect x="100" y="50" width="120" height="80" rx="10" :fill="solarOutput > 0 ? '#fff3cd' : '#f8f9fa'" 
+                stroke="#f59e0b" :stroke-width="solarOutput > 0 ? 4 : 2"/>
+          <text x="160" y="80" text-anchor="middle" class="device-label">☀️ Solar</text>
+          <text x="160" y="100" text-anchor="middle" class="device-value" :class="{ active: solarOutput > 0 }">{{ solarOutput.toFixed(1) }} kW</text>
         </g>
 
         <!-- Battery -->
-        <g class="device-icon" :class="{ active: batteryLevel > 10 }">
-          <rect x="300" y="100" width="100" height="80" rx="10" :fill="batteryLevel > 10 ? '#d1fae5' : '#f3f4f6'" 
-                stroke="#10b981" :stroke-width="batteryLevel > 10 ? 3 : 2"/>
-          <text x="350" y="125" text-anchor="middle" class="device-label">🔋 Battery</text>
-          <text x="350" y="145" text-anchor="middle" class="device-value">{{ batteryLevel.toFixed(1) }}%</text>
-          <text x="350" y="160" text-anchor="middle" class="device-status" :fill="getBatteryStatusColor()">
+        <g class="device-icon battery" :class="{ active: batteryLevel > 20 }">
+          <rect x="100" y="200" width="120" height="80" rx="10" :fill="batteryLevel > 20 ? '#d1fae5' : '#f8f9fa'" 
+                stroke="#10b981" :stroke-width="batteryLevel > 20 ? 4 : 2"/>
+          <text x="160" y="225" text-anchor="middle" class="device-label">🔋 Battery</text>
+          <text x="160" y="245" text-anchor="middle" class="device-value :class="{ active: batteryLevel > 20 }">{{ batteryLevel.toFixed(1) }}%</text>
+          <text x="160" y="265" text-anchor="middle" class="device-status" :fill="getBatteryStatusColor()" font-size="10">
             {{ batteryStatus.toUpperCase() }}
           </text>
+          <!-- Battery Level Indicator -->
+          <rect x="120" y="270" width="80" height="6" rx="3" fill="#e5e7eb"/>
+          <rect x="120" y="270" :width="80 * (batteryLevel / 100)" height="6" rx="3" 
+                :fill="batteryLevel > 50 ? '#10b981' : batteryLevel > 20 ? '#f59e0b' : '#ef4444'"/>
         </g>
 
         <!-- Grid -->
-        <g class="device-icon" :class="{ active: Math.abs(gridPower) > 0 }">
-          <rect x="650" y="50" width="100" height="80" rx="10" :fill="Math.abs(gridPower) > 0 ? '#e7d3ff' : '#f3f4f6'" 
-                stroke="#8b5cf6" :stroke-width="Math.abs(gridPower) > 0 ? 3 : 2"/>
-          <text x="700" y="75" text-anchor="middle" class="device-label">⚡ Grid</text>
-          <text x="700" y="95" text-anchor="middle" class="device-value">{{ gridPower.toFixed(1) }} kW</text>
+        <g class="device-icon grid" :class="{ active: Math.abs(gridPower) > 0 }">
+          <rect x="700" y="50" width="120" height="80" rx="10" :fill="Math.abs(gridPower) > 0 ? '#e7d3ff' : '#f8f9fa'" 
+                stroke="#8b5cf6" :stroke-width="Math.abs(gridPower) > 0 ? 4 : 2"/>
+          <text x="760" y="80" text-anchor="middle" class="device-label">⚡ Grid</text>
+          <text x="760" y="100" text-anchor="middle" class="device-value :class="{ active: Math.abs(gridPower) > 0 }">{{ gridPower.toFixed(1) }} kW</text>
         </g>
 
         <!-- House -->
-        <g class="device-icon active">
-          <rect x="425" y="250" width="150" height="100" rx="10" fill="#dbeafe" 
+        <g class="device-icon house">
+          <rect x="600" y="200" width="150" height="100" rx="10" fill="#dbeafe" 
                 stroke="#3b82f6" stroke-width="3"/>
-          <text x="500" y="285" text-anchor="middle" class="device-label">🏠 Home</text>
-          <text x="500" y="305" text-anchor="middle" class="device-value">{{ houseDemand.toFixed(1) }} kW</text>
+          <text x="675" y="230" text-anchor="middle" class="device-label">🏠 Home</text>
+          <text x="675" y="250" text-anchor="middle" class="device-value active"> {{ houseDemand.toFixed(1) }} kW </text>
+
+          <!-- Temperature displays inside house -->
+          <text x="640" y="275" text-anchor="middle" class="temp-display" font-size="9">
+            🌡️ {{ currentHomeTemp }}°C
+          </text>
+          <text x="710" y="275" text-anchor="middle" class="temp-display" font-size="9">
+            🚿 {{ currentWaterTemp }}°C
+          </text>
         </g>
         
         <!-- Energy Flow Lines with Animation -->
         <g v-if="isRunning || (simulationState === 'ai' && rlPrediction)">
           <!-- Solar to House -->
           <line v-if="solarOutput > 0 && houseDemand > 0" 
-                x1="150" y1="90" x2="450" y2="280" 
+                x1="220" y1="90" x2="600" y2="200" 
                 stroke="#f59e0b" stroke-width="Math.min(8, 2 + solarOutput)" stroke-dasharray="10,5" class="flow-line">
             <animate attributeName="stroke-dashoffset" values="0;-15" dur="1.5s" repeatCount="indefinite"/>
           </line>
           
           <!-- Battery to House -->
           <line v-if="(batteryLevel > 20 && batteryPower < 0) || batteryStatus === 'discharging'"
-                x1="450" y1="160" x2="480" y2="250" 
+                x1="220" y1="240" x2="600" y2="240"  
                 stroke="#10b981" stroke-width="Math.min(6, 2 + Math.abs(batteryPower))" stroke-dasharray="8,4" class="flow-line">
             <animate attributeName="stroke-dashoffset" values="0,-12" dur="1.8s" repeatCount="indefinite"/>
           </line>
           
           <!-- Solar to Battery -->
           <line v-if="(solarOutput > houseDemand && batteryLevel < 95) || (batteryStatus === 'charging')" 
-                x1="150" y1="90" x2="400" y2="120" 
+                x1="160" y1="130" x2="160" y2="200"  
                 stroke="#f59e0b" stroke-width="3" stroke-dasharray="8,4" class="flow-line">
             <animate attributeName="stroke-dashoffset" values="0;-12" dur="1.2s" repeatCount="indefinite"/>
           </line>
           
           <!-- Grid to House -->
           <line v-if="gridPower > 0" 
-                x1="750" y1="90" x2="550" y2="250" 
+                x1="760" y1="130" x2="675" y2="200"
                 stroke="#8b5cf6" stroke-width="Math.min(6, 2 + gridPower)" stroke-dasharray="10,5" class="flow-line">
             <animate attributeName="stroke-dashoffset" values="0;-15" dur="2s" repeatCount="indefinite"/>
           </line>
 
-          <!-- Grid to Battery -->
+          <!-- Grid to Battery
           <line v-if="batteryStatus === 'charging' && solarOutput < batteryPower" 
                 x1="650" y1="110" x2="400" y2="120" 
                 stroke="#8b5cf6" stroke-width="2" class="flow-line">
             <animate attributeName="stroke-dasharray" values="0,12;12,0" dur="1.6s" repeatCount="indefinite"/>
-          </line>
+          </line> -->
+          <path v-if="batteryStatus === 'charging' && solarOutput < batteryPower" 
+                :d="`M 700 90 Q 400 50 160 200`"
+                stroke="#8b5cf6" 
+                stroke-width="2"
+                fill="none"
+                stroke-dasharray="8,4"
+                class="flow-line">
+            <animate attributeName="stroke-dashoffset" values="0;-12" dur="1.6s" repeatCount="indefinite"/>
+          </path>
 
           <!-- Solar to Grid (export) -->
           <line v-if="(solarOutput > houseDemand && batteryLevel > 95) || gridPower < 0" 
-                x1="150" y1="80" x2="750" y2="80" 
+                 x1="220" y1="90" x2="700" y2="90" 
                 stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,3" class="flow-line">
             <animate attributeName="stroke-dashoffset" values="0;-8" dur="1s" repeatCount="indefinite"/>
           </line>
