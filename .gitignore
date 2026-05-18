@@ -1,0 +1,10 @@
+# Backend
+backend/node_modules/
+backend/dist/
+backend/.env
+
+# Docker
+*.env.docker
+
+# Load test results
+load-test/results/
