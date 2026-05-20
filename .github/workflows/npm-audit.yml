@@ -1,0 +1,42 @@
+name: Dependency Scan
+
+on:
+  push:
+    branches:
+      - devsecops
+      - main
+  pull_request:
+
+jobs:
+  npm-audit-backend:
+    name: Run npm audit on backend
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Run npm audit and save report
+        run: |
+          npm audit --audit-level=high --json > npm-audit-report.json || echo "npm audit found issues"
+
+      - name: Upload npm audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-report-backend
+          path: backend/npm-audit-report.json
+
+      - name: Fail if high or critical vulnerabilities exist
+        run: npm audit --audit-level=high
