@@ -1,0 +1,63 @@
+name: Container Image Scan
+
+on:
+  push:
+    branches:
+      - devsecops
+      - main
+  pull_request:
+
+jobs:
+  trivy-scan:
+    name: Build and scan Docker image
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t smart-home-backend:latest ./backend
+
+      - name: Run Trivy scan (table output for logs)
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v ${{ github.workspace }}:/workspace \
+            aquasec/trivy:0.58.2 image \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --exit-code 0 \
+            smart-home-backend:latest
+
+      - name: Run Trivy scan (JSON report for artifact)
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v ${{ github.workspace }}:/workspace \
+            aquasec/trivy:0.58.2 image \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --format json \
+            --output /workspace/trivy-report.json \
+            smart-home-backend:latest
+
+      - name: Upload Trivy report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-image-report
+          path: trivy-report.json
+
+      - name: Fail if HIGH or CRITICAL unfixed vulnerabilities exist
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:0.58.2 image \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            smart-home-backend:latest
