@@ -29,13 +29,6 @@ jobs:
           docker compose up -d
           sleep 20
 
-      - name: Debug - check what's running
-        run: |
-          docker compose ps
-          docker compose logs nginx
-          sudo lsof -i :80 || true
-          sudo lsof -i :8080 || true
-
       - name: Check app is responding
         run: |
           curl --retry 5 --retry-delay 3 --retry-connrefused \
@@ -47,6 +40,7 @@ jobs:
           chmod 777 zap-reports
 
       - name: Run ZAP baseline scan
+        continue-on-error: true
         run: |
           docker run --rm \
             -v ${{ github.workspace }}/zap-reports:/zap/wrk:rw \
@@ -54,12 +48,11 @@ jobs:
             --network host \
             zaproxy/zap-stable:latest \
             zap-baseline.py \
-            -t http://localhost \
+            -t http://localhost:8080 \
             -r zap-baseline-report.html \
             -x zap-baseline-report.xml \
             -c /zap/config/rules.tsv \
             -I
-        continue-on-error: true
 
       - name: Upload ZAP report
         uses: actions/upload-artifact@v4
