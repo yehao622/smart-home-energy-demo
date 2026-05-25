@@ -1,0 +1,81 @@
+name: DAST - OWASP ZAP Baseline Scan
+
+on:
+  push:
+    branches:
+      - devsecops
+      - main
+  pull_request:
+
+jobs:
+  zap-scan:
+    name: Run ZAP baseline scan
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t smart-home-backend:latest ./backend
+
+      - name: Start app with Docker Compose
+        run: |
+          docker compose up -d
+          echo "Waiting for app to be healthy..."
+          sleep 15
+
+      - name: Check app is responding
+        run: |
+          curl --retry 5 --retry-delay 3 --retry-connrefused \
+            http://localhost/health
+
+      - name: Create report directory with correct permissions
+        run: |
+          mkdir -p zap-reports
+          chmod 777 zap-reports
+
+      - name: Run ZAP baseline scan
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/zap-reports:/zap/wrk:rw \
+            -v ${{ github.workspace }}/.zap:/zap/config:ro \
+            --network host \
+            zaproxy/zap-stable:latest \
+            zap-baseline.py \
+            -t http://localhost \
+            -r zap-baseline-report.html \
+            -x zap-baseline-report.xml \
+            -c /zap/config/rules.tsv \
+            -I
+        continue-on-error: true
+
+      - name: Upload ZAP report
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-baseline-report
+          path: zap-reports/
+
+      - name: Fail build if Medium or higher findings remain
+        run: |
+          HIGH=$(python3 -c "
+          import xml.etree.ElementTree as ET
+          tree = ET.parse('zap-reports/zap-baseline-report.xml')
+          alerts = [a for a in tree.findall('.//alertitem')
+                    if int(a.findtext('riskcode', '0')) >= 2]
+          print(len(alerts))
+          ")
+          echo "Medium+ findings: $HIGH"
+          if [ "$HIGH" -gt "0" ]; then
+            echo "FAIL: $HIGH Medium or higher findings found"
+            exit 1
+          fi
+          echo "PASS: No Medium or higher findings"
+
+      - name: Tear down Docker Compose
+        if: always()
+        run: docker compose down
