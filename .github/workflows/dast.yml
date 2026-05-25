@@ -25,8 +25,8 @@ jobs:
 
       - name: Start app with Docker Compose
         run: |
+          export NGINX_PORT=8080
           docker compose up -d
-          echo "Waiting for app to be healthy..."
           sleep 20
 
       - name: Debug - check what's running

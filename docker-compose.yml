@@ -28,6 +28,6 @@ services:
       - app1
       - app2
     ports:
-      - "8080:80"
+      - "${NGINX_PORT:-80}:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
