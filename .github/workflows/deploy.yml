@@ -1,0 +1,65 @@
+name: Build, Push & Deploy
+
+on:
+  workflow_run:
+    workflows:
+      - "SCA - npm audit"
+      - "SAST - ESLint Security"
+      - "Container Scan - Trivy"
+      - "DAST - OWASP ZAP Baseline Scan"
+    types:
+      - completed
+    branches:
+      - devsecops
+      - main
+
+jobs:
+  build-and-push:
+    name: Build and push Docker image to GHCR
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/smart-home-backend
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+
+  deploy:
+    name: Trigger Render deploy
+    runs-on: ubuntu-latest
+    needs: build-and-push   # ← only runs if build-and-push passed
+
+    steps:
+      - name: Deploy to Render
+        run: |
+          curl -s --fail -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+          echo "Deploy triggered successfully"

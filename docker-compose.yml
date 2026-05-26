@@ -2,6 +2,7 @@ services:
   app1:
     build:
       context: ./backend
+    image: ghcr.io/yehao622/smart-home-backend:latest
     container_name: smart-home-app1
     environment:
       PORT: 3000
@@ -13,6 +14,7 @@ services:
   app2:
     build:
       context: ./backend
+    image: ghcr.io/yehao622/smart-home-backend:latest
     container_name: smart-home-app2
     environment:
       PORT: 3000
