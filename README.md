@@ -23,7 +23,6 @@ flowchart TD
 ```
 
 
-
 ## Security Pipeline
 
 Every push to `main` or `devsecops` runs 4 automated security gates in parallel. **All must pass before deployment.**
