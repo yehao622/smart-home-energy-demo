@@ -18,6 +18,9 @@ RUN apk update && apk upgrade --no-cache
 COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
+# Remove package-lock.json so Trivy doesn't scan it
+RUN rm -f package-lock.json
+
 COPY --from=builder /app/dist ./dist
 
 USER node
