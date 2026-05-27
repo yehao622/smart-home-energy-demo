@@ -9,29 +9,18 @@ A full-stack smart home energy simulation app with a **production-grade DevSecOp
 
 ## Architecture
 
-┌─────────────────────────────────────────────────────────────┐
-│                 GitHub Actions CI/CD                        │
-│ npm audit → ESLint SAST → Gitleaks → Trivy → ZAP → Deploy   │
-└───────────────────────┬─────────────────────────────────────┘
-                        │
-          ┌─────────────▼──────────────┐
-          │   Docker Compose Stack     │
-          │                            │
-          │ ┌─────────┐  ┌─────────┐   │
-          │ │   app1  │  │ app2    │   │ ← NestJS (round-robin)
-          │ └────┬────┘  └────┬────┘   │
-          │      └─────┬──────┘        │
-          │       ┌────▼────┐          │
-          │       │ Nginx   │          │ ← Load balancer + rate limiter
-          │       └─────────┘          │
-          │ ┌──────────┐ ┌─────────┐   │
-          │ │Prometheus│ │ Grafana │   │ ← Observability
-          │ └──────────┘ └─────────┘   │
-          └────────────────────────────┘
-                        │
-                 ┌──────▼──────┐
-                 │ Render      │ ← Production deployment
-                 └─────────────┘
+```mermaid
+flowchart TD
+    CI["GitHub Actions CI/CD\nnpm audit → ESLint SAST → Gitleaks → Trivy → ZAP"]
+    CI --> DC
+
+    subgraph DC["Docker Compose Stack"]
+        app1["app1\nNestJS"] & app2["app2\nNestJS"] --> nginx["Nginx\nLoad balancer + rate limiter"]
+        nginx --> prom["Prometheus"] & grafana["Grafana"]
+    end
+
+    DC --> render["Render\nProduction deployment"]
+```
 
 
 
@@ -49,15 +38,15 @@ Every push to `main` or `devsecops` runs 4 automated security gates in parallel.
 
 ### Pipeline Flow
 
-Push / PR
-│
-├── npm audit → blocks High/Critical deps
-├── ESLint Security → blocks insecure code patterns
-├── Gitleaks → blocks committed secrets
-├── Trivy → blocks Critical CVEs in image
-└── OWASP ZAP → blocks Medium+ runtime findings
-│
-└── All pass → Build image → Push to GHCR → Deploy to Render
+```mermaid
+flowchart TD
+    push["Push / PR"] --> audit["npm audit\nblocks High/Critical"]
+    push --> sast["ESLint Security\nblocks insecure patterns"]
+    push --> gitleaks["Gitleaks\nblocks committed secrets"]
+    push --> trivy["Trivy\nblocks Critical CVEs"]
+    push --> zap["OWASP ZAP\nblocks Medium+ findings"]
+    audit & sast & gitleaks & trivy & zap --> deploy["Build image → Push to GHCR → Deploy to Render"]
+```
 
 
 
@@ -124,24 +113,32 @@ k6 run load-test/k6.js
 ---
 
 ## Project Structure
-├── backend/ # NestJS API
-│ └── src/
-│ ├── auth/ # JWT authentication
-│ ├── devices/ # Devices module
-│ └── metrics/ # Prometheus metrics
-├── .github/workflows/ # CI/CD security pipeline
-│ ├── sca.yml # npm audit
-│ ├── sast.yml # ESLint security
-│ ├── secret-scan.yml # Gitleaks
-│ ├── trivy.yml # Container scanning
-│ ├── dast.yml # OWASP ZAP
-│ └── deploy.yml # Build + push + deploy
+```
+smart-home-energy-demo/
+├── backend/
+│   └── src/
+│       ├── auth/            # JWT authentication
+│       ├── devices/         # Devices module
+│       └── metrics/         # Prometheus metrics
+├── .github/
+│   └── workflows/
+│       ├── dast.yml         # OWASP ZAP baseline scan
+│       ├── deploy.yml       # Build + push to GHCR + deploy to Render
+│       ├── image-scan.yml   # Trivy container scanning
+│       ├── npm-audit.yml    # Dependency audit (SCA)
+│       ├── secret-scan.yml  # Gitleaks secret scanning
+│       ├── semgrep.yml      # Semgrep SAST
+│       ├── vercel.yml       # Vercel preview deploy
+│       └── README.md
 ├── load-test/
-│ └── k6.js # k6 load test scenarios
-├── docker-compose.yml # Full local stack
-├── nginx.conf # Load balancer config
-└── prometheus.yml # Scrape config
-
+│   └── k6.js                # k6 load test (normal/spike/soak)
+├── docker-compose.yml
+├── nginx.conf
+├── prometheus.yml
+├── vercel.json
+├── SECURITY.md
+└── README.md
+```
 
 ## Talking Points
 
