@@ -1,5 +1,7 @@
 import { getToken } from './auth';
 
+const BASE_URL = process.env.VUE_APP_API_URL || '';
+
 async function apiFetch(url, options = {}) {
   const token = getToken();
 
@@ -12,7 +14,7 @@ async function apiFetch(url, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(url, {
+  const response = await fetch(`${BASE_URL}${url}`, {
     ...options,
     headers,
   });
