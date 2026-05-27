@@ -5,6 +5,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm install",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ':(exclude)backend' ':(exclude).github' ':(exclude)load-test' ':(exclude)prometheus.yml' ':(exclude)docker-compose.yml' ':(exclude)nginx.conf'",
   "routes": [
     {
       "src": "/assets/(.*)",

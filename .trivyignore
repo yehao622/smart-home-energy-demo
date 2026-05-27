@@ -1,0 +1,18 @@
+# tar CVEs - tar is listed in file-type's package.json but not physically installed
+CVE-2026-23745
+CVE-2026-23950
+CVE-2026-24842
+CVE-2026-26960
+CVE-2026-29786
+CVE-2026-31802
+
+# glob CVE - not physically installed, manifest reference only
+CVE-2025-64756
+
+# cross-spawn CVE - not physically installed, manifest reference only  
+CVE-2024-21538
+
+# minimatch CVEs - not physically installed, manifest reference only
+CVE-2026-26996
+CVE-2026-27903
+CVE-2026-27904
