@@ -36,7 +36,12 @@ async function bootstrap() {
 
   // CORS — restrict to known origins in production
   app.enableCors({
-    origin: process.env.ALLOWED_ORIGIN || 'http://localhost',
+    origin: [
+      'http://localhost:5174',
+      'http://localhost:5173',
+      'https://smart-home-energy-demo.vercel.app', // keep existing
+    ],
+    credentials: true,
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
